@@ -124,7 +124,8 @@ These are the commands:
   version, such as `3.17.+`, resolves as it did in the last lock, from
   the version listings that the lockfile holds. A relock of an unchanged
   build reproduces the lockfile byte for byte. The lock runs Gradle on
-  `JAVA_HOME`, on nixpkgs' JDK of a major version with `--java 17`, or
+  nixpkgs' JDK of a major version with `--java 17`, or of the Java the
+  existing lockfile was made with. A first lock runs on `JAVA_HOME`, or
   else on the JDK 21 of the command. Gradle arguments after `--` go into
   the lockfile and into every Gradle run of the lock.
 - `gradle-purifier update [<group>:<artifact>...]` locks again with the

@@ -30,7 +30,10 @@ fail() {
 }
 
 if unshare -rn true 2>/dev/null; then
-  cut=(unshare -rn)
+  # A new network namespace has only a loopback interface, and it is
+  # down; Gradle needs it, for the address its daemon and file locks
+  # listen on.
+  cut=(unshare -rn sh -c 'ip link set lo up && exec "$@"' sh)
 else
   cut=()
   echo "offline: the system makes no network namespace for this user; the refusing proxy alone cuts Gradle off" >&2

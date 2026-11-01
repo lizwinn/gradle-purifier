@@ -54,7 +54,8 @@ Usage:
       outputs of every project, in gradle-purifier.lock.json. The lock is
       made again only when the build definition changed, unless --relock
       is given. Gradle runs on nixpkgs' JDK of the major version --java
-      names, on JAVA_HOME, or on the command's JDK 21. The gradle
+      names, or of the Java the lockfile was made with; a first lock runs
+      on JAVA_HOME, or on the command's JDK 21. The gradle
       arguments are recorded and passed to every Gradle run of the lock.
       A dynamic version, such as 3.17.+, resolves as it did in the lock
       before, from the version listings the lockfile holds.
@@ -281,7 +282,7 @@ lock_command() {
   mkdir -p "$state"
   pinned_listings >"$state/pinned.tsv"
   update_args=()
-  run_lock "$java_major" "$state/pinned.tsv" '' "${gradle_args[@]}"
+  run_lock "$(lock_java "$java_major")" "$state/pinned.tsv" '' "${gradle_args[@]}"
 }
 
 update_command() {
@@ -331,7 +332,19 @@ update_command() {
   elif uses_dependency_locking; then
     update_args=(--write-locks)
   fi
-  run_lock "$java_major" "$state/pinned.tsv" 1 "${gradle_args[@]}"
+  run_lock "$(lock_java "$java_major")" "$state/pinned.tsv" 1 "${gradle_args[@]}"
+}
+
+# The Java major version a lock runs on: $1 when --java gave one, else the
+# one of the existing lockfile, so that a relock keeps the Java of the
+# lock it replaces; empty for a first lock, which runs on JAVA_HOME or the
+# JDK of the command.
+lock_java() {
+  if [ -n "$1" ]; then
+    echo "$1"
+  elif [ -f "$lockfile" ]; then
+    jq -r '.javaMajor // empty' "$lockfile" 2>/dev/null || true
+  fi
 }
 
 # The version listings (maven-metadata files) of the lockfile, for the

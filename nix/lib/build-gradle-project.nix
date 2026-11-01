@@ -306,6 +306,9 @@ let
         ''}
         ${lib.optionalString hasPublications ''
           cp -r "$built/maven" "$maven"
+          # The version listings of a Maven repository hold the time of the
+          # publication, which differs from one build to the next.
+          find "$maven" -name 'maven-metadata*' -delete
           link() {
             # $1 publication, $2 key, $3 the artifact's directory, $4 its
             # file name after "<artifactId>-<version>", and $5 "optional"

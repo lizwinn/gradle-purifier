@@ -115,6 +115,18 @@ if (!(mode in ['lock', 'sandbox', 'interactive', 'publish'])) {
     throw new GradleException("gradle-purifier: GRADLE_PURIFIER_MODE is '${mode}'; it must be lock, sandbox, interactive or publish")
 }
 
+// A package build gives the same files each time: archives hold their
+// entries in a fixed order and without the times of the files, which
+// Gradle 9 does by default and Gradle 8 does not.
+if (mode == 'sandbox') {
+    gradle.allprojects { p ->
+        p.tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach { task ->
+            task.preserveFileTimestamps = false
+            task.reproducibleFileOrder = true
+        }
+    }
+}
+
 if (mode == 'interactive' && gradle.parent == null) {
     gradle.beforeSettings { settings ->
         settings.plugins.apply(PurifierMissingHintPlugin)

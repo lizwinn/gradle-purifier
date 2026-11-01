@@ -220,6 +220,28 @@ in
       "example/greeting/1.0.0/greeting-1.0.0.jar"
     ];
 
+  # Spring PetClinic, a Spring Boot build on Gradle 9, from its source on
+  # GitHub and a lockfile kept outside it, which the lock-real-world
+  # workflow (.github/workflows/lock-real-world.yml) makes.
+  petclinic =
+    let
+      pinned = lib.importJSON ./real-world/petclinic.json;
+      petclinic = build {
+        src = pkgs.fetchFromGitHub {
+          inherit (pinned)
+            owner
+            repo
+            rev
+            hash
+            ;
+        };
+        lockFile = ./real-world/petclinic.lock.json;
+      };
+    in
+    expectFiles "petclinic" petclinic.packages.spring-petclinic [
+      "share/archives/spring-petclinic.jar"
+    ];
+
   # The recorder's mapping between request paths, remote URLs and paths in
   # the tree of locked downloads (tests/RecorderTest.java).
   recorder-unit =
