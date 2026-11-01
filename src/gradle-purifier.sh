@@ -565,7 +565,9 @@ prefetch_command() {
   if [ "$(jq '[.artifacts[] | select(.url // "" | startswith("https://download.jetbrains.com/kotlin/native/"))] | length' "$lockfile")" -gt 0 ]; then
     local toolchain konan_dir host
     toolchain=$(build_attr konan)
-    konan_dir=$state/konan
+    # The data directory of Kotlin/Native, beside the GC root of the
+    # toolchain ($state/konan), whose files it links.
+    konan_dir=$state/konan-data
     rm -rf "$konan_dir/dependencies"
     mkdir -p "$konan_dir/dependencies"
     local dependency

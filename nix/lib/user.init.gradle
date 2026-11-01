@@ -33,7 +33,14 @@ if (System.getenv('GRADLE_PURIFIER_MODE')) {
     return
 }
 
-def dir = gradle.startParameter.projectDir ?: gradle.startParameter.currentDir
+// An included build or buildSrc has a start parameter of its own, whose
+// directory is its own; the root of the build is that of the outermost
+// build.
+def outermost = gradle
+while (outermost.parent != null) {
+    outermost = outermost.parent
+}
+def dir = outermost.startParameter.projectDir ?: outermost.startParameter.currentDir
 while (dir != null && !new File(dir, 'settings.gradle').isFile() && !new File(dir, 'settings.gradle.kts').isFile()) {
     dir = dir.parentFile
 }

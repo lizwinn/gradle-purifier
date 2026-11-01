@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "contentHash": "sha256:d4c2b7cb120ac42c9826b44e5141b20f35df1852dbf015798e9771c29a6bdf17",
+  "inputsHash": "b62747f53c0658c834546c68a490dcfb8b460952b6ce89aa878869d89e8bfa7c",
+  "gradleArguments": [],
+  "javaMajor": 21,
+  "distribution": "https/services.gradle.org/distributions/gradle-8.14.3-bin.zip",
+  "rootProjectName": "update",
+  "konanHost": "linux_x64",
+  "projects": [
+    {
+      "path": ":",
+      "publications": [],
+      "application": null,
+      "executables": [],
+      "archives": [
+        "update.jar"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/apache/apache/23/apache-23.pom",
+      "hash": "sha256-vBBiTgYj82V3+sVjnKKTbTJA7RUvttjVM6tNJwVDSRw="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0-javadoc.jar",
+      "hash": "sha256-Rtt84hb6aNTlzP7iM1As6FuqEot+qKDp3/ekqACJV78="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0-sources.jar",
+      "hash": "sha256-MlpFUe7n2Z92FqoFsA7jyp0M3I+s4bJSqYZPLZRcWLM="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar",
+      "hash": "sha256-2RnZBEhsA3+NGTQS2gyS4iqfokIwudZ6V4VcXDHH6U4="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.pom",
+      "hash": "sha256-gtMfHcxFg+/9dE6XkWWxbaZL+GvKYj/F0bA+2U9FyFo="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-parent/52/commons-parent-52.pom",
+      "hash": "sha256-ddvo806Y5MP/QtquSi+etMvNO18QR9VEYKzpBtu0UC4="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.7.1/junit-bom-5.7.1.module",
+      "hash": "sha256-mFTjiU1kskhSB+AEa8oHs9QtFp54L0+oyc4imnj67gQ="
+    },
+    {
+      "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.7.1/junit-bom-5.7.1.pom",
+      "hash": "sha256-C5sUo9YhBvr+jGinF7h7h60YaFiZRRt1PAT6QbaFd4Q="
+    },
+    {
+      "url": "https://services.gradle.org/distributions/gradle-8.14.3-bin.zip",
+      "hash": "sha256-vXEQIhNJMGCVbsIp2Ua+7lcVjb2J0OYrkbyg+ixfNTE="
+    }
+  ]
+}
