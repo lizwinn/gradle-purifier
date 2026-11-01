@@ -41,9 +41,10 @@ import java.util.concurrent.Executors;
  * https://host/path becomes http://127.0.0.1:port/https/host/path. The server fetches the
  * remote URL and passes the response on. For every request the remote answers with 200, it
  * appends a line to the records file: the path of the file in the tree of locked downloads, the
- * remote URL, and the SRI SHA-256 hash of the body, separated by tabs. For a file whose remote
- * contents change over time (see {@link #isMutable}), the line holds "inline" and the contents
- * in Base64 instead of the URL and the hash.
+ * remote URL, the SRI SHA-256 hash of the body, and a mirror URL that serves the same file, or
+ * nothing, separated by tabs. For a file whose remote contents change over time (see {@link
+ * #isMutable}), the line holds "inline" and the contents in Base64 instead of the URL and the
+ * hash.
  *
  * <p>Usage: {@code java Recorder <records file> <port file> [<tunnel host>...]}. The server
  * listens on an ephemeral port of the loopback address, and an HTTPS proxy that tunnels to the
@@ -64,6 +65,20 @@ public final class Recorder {
 
   private static final List<String> CHECKSUM_SUFFIXES =
       List.of(".sha1", ".sha256", ".sha512", ".md5");
+
+  /** The URL prefixes of Maven Central, and Google's mirror of it, which serves the same files. */
+  private static final List<String> CENTRAL =
+      List.of("https://repo.maven.apache.org/maven2/", "https://repo1.maven.org/maven2/");
+
+  private static final String CENTRAL_MIRROR =
+      "https://maven-central.storage-download.googleapis.com/maven2/";
+
+  /**
+   * Whether the recorder fetches Maven Central's files from its mirror: when the environment sets
+   * GRADLE_PURIFIER_CENTRAL_MIRROR to 1. The lockfile names Maven Central either way.
+   */
+  private static final boolean FETCH_FROM_MIRROR =
+      "1".equals(System.getenv("GRADLE_PURIFIER_CENTRAL_MIRROR"));
 
   private final HttpClient client;
   private final Writer records;
@@ -282,6 +297,23 @@ public final class Recorder {
     return URI.create(parts[1] + "://" + parts[2] + "/" + parts[3]);
   }
 
+  /** The mirror URL of a Maven Central URL, or null for any other URL. */
+  static URI mirrorOf(URI remote) {
+    String url = remote.toString();
+    for (String prefix : CENTRAL) {
+      if (url.startsWith(prefix)) {
+        return URI.create(CENTRAL_MIRROR + url.substring(prefix.length()));
+      }
+    }
+    return null;
+  }
+
+  /** The URL the recorder fetches `remote` from: its mirror when it fetches from mirrors. */
+  private static URI source(URI remote) {
+    URI mirror = mirrorOf(remote);
+    return FETCH_FROM_MIRROR && mirror != null ? mirror : remote;
+  }
+
   /** The path of a remote file in the tree of locked downloads. */
   static String treePathOf(URI remote) {
     String authority = remote.getPort() == -1 ? remote.getHost() : remote.getHost() + ":" + remote.getPort();
@@ -310,7 +342,7 @@ public final class Recorder {
     // must hold the file at this repository's path as well, or the
     // sandboxed build, which reads only this path, does not find it.
     HttpRequest.Builder request =
-        HttpRequest.newBuilder(remote).timeout(Duration.ofMinutes(10)).GET();
+        HttpRequest.newBuilder(source(remote)).timeout(Duration.ofMinutes(10)).GET();
     exchange
         .getRequestHeaders()
         .forEach(
@@ -379,7 +411,8 @@ public final class Recorder {
 
   /** Fetches `remote` and records it when the remote answers with 200. */
   private void recordFetched(URI remote) throws IOException {
-    HttpRequest request = HttpRequest.newBuilder(remote).timeout(Duration.ofMinutes(10)).GET().build();
+    HttpRequest request =
+        HttpRequest.newBuilder(source(remote)).timeout(Duration.ofMinutes(10)).GET().build();
     try {
       HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
       MessageDigest sha256 = sha256();
@@ -435,9 +468,14 @@ public final class Recorder {
       return;
     }
     if (contents != null) {
-      record(path, "inline", Base64.getEncoder().encodeToString(contents.toByteArray()));
+      record(path, "inline", Base64.getEncoder().encodeToString(contents.toByteArray()), "");
     } else {
-      record(path, remote.toString(), "sha256-" + Base64.getEncoder().encodeToString(sha256.digest()));
+      URI mirror = mirrorOf(remote);
+      record(
+          path,
+          remote.toString(),
+          "sha256-" + Base64.getEncoder().encodeToString(sha256.digest()),
+          mirror == null ? "" : mirror.toString());
     }
   }
 
@@ -474,8 +512,9 @@ public final class Recorder {
     }
   }
 
-  private synchronized void record(String path, String url, String hash) throws IOException {
-    records.write(path + "\t" + url + "\t" + hash + "\n");
+  private synchronized void record(String path, String url, String hash, String mirror)
+      throws IOException {
+    records.write(path + "\t" + url + "\t" + hash + "\t" + mirror + "\n");
     records.flush();
   }
 

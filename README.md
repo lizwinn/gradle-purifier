@@ -58,6 +58,12 @@ Some files are recorded in a particular way:
   snapshots, changes whenever a new version is published. The lockfile
   holds its contents rather than its hash, so the build sees the versions
   the lock run saw.
+- A file of Maven Central has Google's mirror of Maven Central
+  (maven-central.storage-download.googleapis.com) in its `mirrors`, which
+  Nix tries when Maven Central fails. With
+  `GRADLE_PURIFIER_CENTRAL_MIRROR=1`, the lock run downloads from the
+  mirror, which helps when Maven Central limits the rate of requests; the
+  lockfile names Maven Central either way.
 
 `gradle-purifier lock` makes the lock again only when the build
 definition changed: the settings and build scripts, `gradle.properties`,
@@ -120,16 +126,23 @@ A package written for `callPackage` takes it by name:
 the root project, and the project path with `-` for `:` otherwise
 (`:libs:core` is `libs-core`).
 
-- A project with the `application` plugin builds its installed
-  distribution (`bin/` and `lib/`), with the start script set to run on
-  the build's JDK, so `nix run` runs it.
-- A project with Maven publications builds them in Maven layout, in `out`,
-  or in the `maven` output when the project also has an application. The
+The lockfile names every output of every project, so Nix knows each one
+by name before anything is built:
+
+- **Programs** go to `bin/` of `out`. A project with the `application`
+  plugin installs its distribution (`bin/` and `lib/`), with the start
+  script set to run on the build's JDK, and a Kotlin/Native project its
+  release executables. `nix run` runs the program.
+- **Archives** that `assemble` makes (the jar, a sources jar, Spring
+  Boot's `bootJar`, a shadow jar, `distZip`) go to `share/archives/` of
+  `out`, named without the project's version: `app.jar`, `app-plain.jar`.
+  `packages.<id>.archives."<key>"` is the path of one.
+- **Maven publications** go to the `maven` output, in Maven layout. The
   package links each artifact, without the project's version, at
   `nix-support/artifacts/<publication>/<artifactId>[-<classifier>].<ext>`,
   with the POM at `…/descriptor` and the Gradle module metadata at
   `…/module`. `packages.<id>.artifacts.<publication>."<key>"` is the path
-  of an artifact, known from the lockfile before the package is built.
+  of one.
 
 `nix/lib/build-gradle-project.nix` documents the builder's arguments:
 

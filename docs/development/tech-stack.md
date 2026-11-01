@@ -13,5 +13,6 @@
   `unzip` for the build copy and the distribution.
 - **caisson** for the flake, as in sbt-purifier; nixpkgs in the package set
   builds the command and runs the checks. The Nix library needs only
-  `pkgs` from its caller, and its interactive part (`realize.nix`,
-  `lock.nix`, `fetch.nix`) needs no nixpkgs at all.
+  `pkgs` from its caller. The command builds the tree of locked
+  downloads and the Kotlin/Native toolchain of its interactive mode with
+  the nixpkgs it was built with.

@@ -203,7 +203,24 @@ record_konan_dependencies() {
     path=$(tree_path "$url")
     printf '%s\t%s\t%s\n' "$path" "$url" "$hash" >>"$records"
     echo "$path" >>"$list"
-  done < <(sed -n 's/^Downloading dependency \(https\?:\/\/[^ ]*\) to .*/\1/p' "$log" | sort -u)
+  done < <(konan_download_urls "$log")
+}
+
+# The URLs Kotlin/Native's downloader names in the Gradle output $1, each
+# once.
+konan_download_urls() {
+  sed -n 's/^Downloading dependency \(https\?:\/\/[^ ]*\) to .*/\1/p' "$1" | sort -u
+}
+
+# The lockfile's artifacts, as JSON, from the recorder's records file $1:
+# a file entry for each line with a URL (its optional fourth field is a
+# mirror), an inline entry for each line the recorder marked "inline" (its
+# third field is the contents in Base64), and one entry per path.
+artifacts_json() {
+  jq -R -s 'split("\n") | map(select(length > 0) | split("\t")
+    | if .[1] == "inline" then {path: .[0], contents: (.[2] | @base64d)}
+      else {path: .[0], url: .[1], mirrors: ([.[3] // empty] | map(select(length > 0))), hash: .[2]} end)
+    | unique_by(.path)' "$1"
 }
 
 # The Kotlin/Native name of this machine. A Kotlin/Native toolchain runs
@@ -320,7 +337,7 @@ lock_command() {
   jq -n \
     --argjson version "$lock_version" \
     --slurpfile described "$work/output/projects.json" \
-    --rawfile records "$records" \
+    --argjson artifacts "$(artifacts_json "$records")" \
     --rawfile konanDependencies "$work/konan-dependencies" \
     --arg konanHost "$(konan_host)" \
     --arg distribution "$(tree_path "$url")" \
@@ -336,37 +353,23 @@ lock_command() {
       projects: $described[0].projects,
       konanDependencies: ($konanDependencies | split("\n") | map(select(length > 0)) | unique),
       konanHost: $konanHost,
-      artifacts: (
-        $records | split("\n") | map(select(length > 0) | split("\t")
-          | if .[1] == "inline" then {path: .[0], contents: (.[2] | @base64d)}
-            else {path: .[0], url: .[1], mirrors: [], hash: .[2]} end)
-        | unique_by(.path)
-      )
+      artifacts: $artifacts
     }' >"$root/$lockfile.tmp"
   mv "$root/$lockfile.tmp" "$root/$lockfile"
   echo "gradle-purifier: wrote $lockfile ($(jq '.artifacts | length' "$root/$lockfile") downloads)" >&2
 }
 
-# Fetches the locked downloads through Nix, links them into
-# .gradle/purifier/repository, and prints the absolute path of that tree.
+# Fetches the locked downloads through Nix and prints the store path of
+# their tree (repository.nix, as the Nix builder makes it), with a GC root
+# in .gradle/purifier.
 realize() {
   local state=$PWD/.gradle/purifier
   mkdir -p "$state"
-  local args=(--arg lockFile "$PWD/$lockfile" --arg libDir "$lib")
-  nix-build --no-out-link --quiet "$lib/realize.nix" -A fetches "${args[@]}" >/dev/null
-  local manifest
-  manifest=$(nix-instantiate --eval --strict --json --read-write-mode "$lib/realize.nix" -A manifest "${args[@]}" | jq -r .)
-  nix-store --add-root "$state/gcroot" --realise "$manifest" >/dev/null
-  local tree=$state/repository
-  if [ "$(cat "$state/repository.manifest" 2>/dev/null)" != "$manifest" ]; then
-    rm -rf "$tree"
-    mkdir -p "$tree"
-    local rel target
-    while IFS=$'\t' read -r rel target; do
-      mkdir -p "$tree/$(dirname "$rel")"
-      ln -s "$target" "$tree/$rel"
-    done < <(jq -r 'to_entries[] | "\(.key)\t\(.value)"' "$manifest")
-    echo "$manifest" >"$state/repository.manifest"
+  local tree
+  if ! tree=$(nix-build --quiet --out-link "$state/repository" \
+    --expr "{ lockFile }: (import $nixpkgs { }).callPackage $lib/repository.nix { inherit lockFile; }" \
+    --arg lockFile "$PWD/$lockfile"); then
+    die "the locked downloads did not fetch (see Nix's error above). A hash mismatch means $lockfile does not match what its URL serves: restore the lockfile from version control, or run 'gradle-purifier lock --relock' if the remote changed the file."
   fi
   printf '%s' "$tree"
 }
@@ -379,6 +382,9 @@ lock_is_current() {
   if [ ! -f "$lockfile" ]; then
     echo "gradle-purifier: the build has no $lockfile; run 'gradle-purifier lock'. $consequence" >&2
     return 1
+  fi
+  if ! jq -e 'type == "object" and (.artifacts | type == "array") and (.projects | type == "array")' "$lockfile" >/dev/null 2>&1; then
+    die "$lockfile is not a gradle-purifier lockfile (it is not valid JSON, or it lacks artifacts or projects); restore it from version control or run 'gradle-purifier lock --relock'"
   fi
   local locked_args=()
   mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
@@ -438,15 +444,26 @@ run_locked_gradle() {
   else
     java=$(nixpkgs_jdk "$(locked_java_major)")
   fi
+  # Gradle's errors go to the terminal and to a log as well, so that a
+  # failure to find a locked file can be explained after Gradle exits.
+  local errors status=0
+  errors=$(mktemp "${TMPDIR:-/tmp}/gradle-purifier-errors.XXXXXX")
   JAVA_HOME=$java \
     GRADLE_PURIFIER_MODE=$mode \
     GRADLE_PURIFIER_REPOSITORY=file://$tree \
-    exec "$gradle_home/bin/gradle" \
+    "$gradle_home/bin/gradle" \
     --offline \
     --init-script "$lib/purifier.init.gradle" \
     "-Dorg.gradle.internal.plugins.portal.url.override=file://$tree/$portal" \
     "${locked_args[@]}" \
-    "$@"
+    "$@" 2> >(tee "$errors" >&2) || status=$?
+  wait "$!" 2>/dev/null || true
+  if [ "$status" -ne 0 ] && grep -q -e 'Could not find' -e 'Could not resolve' "$errors" \
+    && grep -q -F "$tree" "$errors"; then
+    echo "gradle-purifier: the build needs a file that $lockfile does not hold (Gradle names it above). Run 'gradle-purifier lock --relock' to lock it, or restore the lockfile if it was edited." >&2
+  fi
+  rm -f "$errors"
+  exit "$status"
 }
 
 run_command() {
@@ -486,9 +503,12 @@ publish_command() {
   GRADLE_PURIFIER_ARTIFACTS=$artifacts run_locked_gradle publish "${excluded[@]}" "$@"
 }
 
-case ${1:-} in
-  lock) shift; lock_command "$@" ;;
-  publish) shift; publish_command "$@" ;;
-  -h | --help) usage ;;
-  *) run_command "$@" ;;
-esac
+# The unit tests (tests/cli-unit.sh) source the command for its functions.
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  case ${1:-} in
+    lock) shift; lock_command "$@" ;;
+    publish) shift; publish_command "$@" ;;
+    -h | --help) usage ;;
+    *) run_command "$@" ;;
+  esac
+fi

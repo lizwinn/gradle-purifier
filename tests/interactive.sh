@@ -69,13 +69,15 @@ echo "== java-library: publish what Nix built" >&2
 rm -rf "$work/java-library/build"
 output=$(run java-library publish publishMavenPublicationToLocalRepository) || { echo "$output"; fail "java-library: publish failed"; }
 published=$work/java-library/build/local-repository/example/greeting/1.0.0
-built=$work/java-library/.gradle/purifier/published/greeting/nix-support/artifacts/maven
+# nix-build names the link to the package's `maven` output greeting-maven.
+built=$work/java-library/.gradle/purifier/published/greeting-maven/nix-support/artifacts/maven
 for key in greeting.jar greeting-sources.jar module; do
   case $key in
     module) file=greeting-1.0.0.module ;;
     *) file=${key/greeting/greeting-1.0.0} ;;
   esac
   [ -f "$published/$file" ] || fail "java-library: publish sent no $file"
+  [ -f "$built/$key" ] || fail "java-library: the Nix package holds no $key"
   cmp -s "$published/$file" "$built/$key" || fail "java-library: the published $file is not the one Nix built"
 done
 [ -f "$published/greeting-1.0.0.pom" ] || fail "java-library: publish sent no POM"
@@ -86,15 +88,49 @@ fi
 
 echo "== kotlin-app: build and run" >&2
 output=$(run kotlin-app build :app:run) || { echo "$output"; fail "kotlin-app: build failed"; }
-grep -q '^Hello, Nix!$' <<<"$output" || { echo "$output"; fail "kotlin-app: the app did not greet"; }
+# The JVM's notice of JAVA_TOOL_OPTIONS on stderr may share a line with
+# the greeting.
+grep -q 'Hello, Nix!$' <<<"$output" || { echo "$output"; fail "kotlin-app: the app did not greet"; }
 expect_no_downloads kotlin-app
 
 if [ "$(uname -m)" = x86_64 ]; then
   echo "== kotlin-native: build, test and run on the locked toolchain" >&2
   output=$(run kotlin-native build runReleaseExecutableLinuxX64) || { echo "$output"; fail "kotlin-native: build failed"; }
-  grep -q '^Hello, Nix!$' <<<"$output" || { echo "$output"; fail "kotlin-native: the executable did not greet"; }
+  grep -q 'Hello, Nix!$' <<<"$output" || { echo "$output"; fail "kotlin-native: the executable did not greet"; }
   expect_no_downloads kotlin-native
 fi
+
+# Each mistake below makes the command fail with a message that says what
+# is wrong and what to run. Each works on a fresh copy of java-library.
+mistake() {
+  rm -rf "$work/mistake"
+  cp -r "$work/java-library" "$work/mistake"
+  rm -rf "$work/mistake/.gradle" "$work/mistake/build"
+}
+
+echo "== a malformed lockfile" >&2
+mistake
+echo '{ "version": 1, ' >"$work/mistake/gradle-purifier.lock.json"
+if output=$(run mistake build); then fail "a malformed lockfile ran"; fi
+grep -q 'is not a gradle-purifier lockfile.*lock --relock' <<<"$output" || { echo "$output"; fail "no message for a malformed lockfile"; }
+
+echo "== a tampered hash" >&2
+mistake
+# The tampered entry downloads again, so it is the small file from
+# nodejs.org, which serves the test without a rate limit.
+jq '(.artifacts[] | select(.path | endswith("SHASUMS256.txt")) | .hash) = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="' \
+  "$work/java-library/gradle-purifier.lock.json" >"$work/mistake/gradle-purifier.lock.json"
+if output=$(run mistake build); then fail "a tampered hash ran"; fi
+grep -q 'hash mismatch' <<<"$output" || { echo "$output"; fail "Nix reported no hash mismatch"; }
+grep -q 'restore the lockfile.*lock --relock' <<<"$output" || { echo "$output"; fail "no message for a tampered hash"; }
+
+echo "== an entry missing from the lockfile" >&2
+mistake
+jq 'del(.artifacts[] | select(.path | endswith("commons-text-1.13.0.jar")))' \
+  "$work/java-library/gradle-purifier.lock.json" >"$work/mistake/gradle-purifier.lock.json"
+if output=$(run mistake build); then fail "a lockfile without an entry the build needs ran"; fi
+grep -q 'commons-text' <<<"$output" || { echo "$output"; fail "Gradle did not name the missing file"; }
+grep -q 'gradle-purifier lock --relock' <<<"$output" || { echo "$output"; fail "no message for a missing entry"; }
 
 echo "== kotlin-app: a changed build definition falls back to ./gradlew" >&2
 echo '// changed' >>"$work/kotlin-app/app/build.gradle.kts"

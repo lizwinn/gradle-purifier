@@ -64,7 +64,12 @@ in
   inherit gradle-purifier;
 
   java-library = javaLibrary.packages.greeting;
-  java-library-artifacts = expectFiles "java-library-artifacts" javaLibrary.packages.greeting [
+  # The archives of `assemble` are in `out`, under their version-free keys.
+  java-library-archives = expectFiles "java-library-archives" javaLibrary.packages.greeting [
+    "share/archives/greeting.jar"
+    "share/archives/greeting-sources.jar"
+  ];
+  java-library-artifacts = expectFiles "java-library-artifacts" javaLibrary.packages.greeting.maven [
     "nix-support/artifacts/maven/greeting.jar"
     "nix-support/artifacts/maven/greeting-sources.jar"
     "nix-support/artifacts/maven/descriptor"
@@ -83,7 +88,7 @@ in
   # The Multiplatform library publishes the JVM variant and the root
   # publication that points at it, each with its module metadata.
   kotlin-shared = kotlinApp.packages.shared;
-  kotlin-shared-artifacts = expectFiles "kotlin-shared-artifacts" kotlinApp.packages.shared [
+  kotlin-shared-artifacts = expectFiles "kotlin-shared-artifacts" kotlinApp.packages.shared.maven [
     "nix-support/artifacts/jvm/shared-jvm.jar"
     "nix-support/artifacts/jvm/module"
     "nix-support/artifacts/kotlinMultiplatform/shared-kotlin-tooling-metadata.json"
@@ -107,6 +112,27 @@ in
       echo "the app printed: $output" >&2
       exit 1
     fi
+    touch $out
+  '';
+
+  # The recorder's mapping between request paths, remote URLs and paths in
+  # the tree of locked downloads (tests/RecorderTest.java).
+  recorder-unit =
+    runCommand "recorder-unit"
+      {
+        nativeBuildInputs = [ pkgs.jdk21_headless ];
+      }
+      ''
+        cp ${../src/Recorder.java} Recorder.java
+        cp ${./RecorderTest.java} RecorderTest.java
+        javac -d classes Recorder.java RecorderTest.java
+        java -cp classes RecorderTest
+        touch $out
+      '';
+
+  # The command's parsing (tests/cli-unit.sh).
+  cli-unit = runCommand "cli-unit" { nativeBuildInputs = [ pkgs.jq ]; } ''
+    bash ${./cli-unit.sh} ${lib.getExe gradle-purifier}
     touch $out
   '';
 

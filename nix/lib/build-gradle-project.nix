@@ -14,11 +14,12 @@
 #
 #   repository       the tree of every locked download
 #   distribution     the Gradle distribution of the lock, unpacked
-#   packages.<id>    a package per project the lock names: one with an
-#                    application holds the installed application (bin/ and
-#                    lib/); one with Maven publications holds them in Maven
-#                    layout, in the `maven` output when the project has an
-#                    application and in `out` otherwise
+#   packages.<id>    a package per project the lock names. Its `out` holds
+#                    the programs (an installed application, with bin/ and
+#                    lib/, and Kotlin/Native executables in bin/) and the
+#                    archives `assemble` makes, in share/archives. Its
+#                    `maven` output, when the project has Maven
+#                    publications, holds them in Maven layout.
 {
   lib,
   stdenv,
@@ -202,10 +203,8 @@ let
       executables = project.executables or [ ];
       hasExecutables = executables != [ ];
       hasPublications = project.publications != [ ];
-      # `out` holds the programs when the project has any, and the Maven
-      # publications otherwise.
-      hasPrograms = hasApplication || hasExecutables;
-      mavenOutput = if hasPrograms then "maven" else "out";
+      archives = project.archives or [ ];
+      archiveDirectory = "share/archives";
       mainProgram =
         if hasApplication then
           project.application.name
@@ -215,13 +214,13 @@ let
           null;
       artifactFile =
         package: publication: key:
-        "${package.${mavenOutput}}/${linkDirectory}/${publication}/${key}";
+        "${package.maven}/${linkDirectory}/${publication}/${key}";
       taskPath = if project.path == ":" then ":purifierBuild" else "${project.path}:purifierBuild";
     in
     stdenvNoCC.mkDerivation (finalAttrs: {
       name = project.id;
       src = filteredSrc;
-      outputs = [ "out" ] ++ lib.optional (hasPrograms && hasPublications) "maven";
+      outputs = [ "out" ] ++ lib.optional hasPublications "maven";
       nativeBuildInputs = [ makeWrapper ];
       dontConfigure = true;
       # The outputs are jars, POMs and start scripts; fixup has nothing to
@@ -235,8 +234,9 @@ let
       installPhase = ''
         runHook preInstall
         built="$GRADLE_PURIFIER_OUTPUT/${project.id}"
+        mkdir -p "$out"
         ${lib.optionalString hasApplication ''
-          cp -r "$built/application" "$out"
+          cp -r "$built/application/." "$out/"
           rm -f "$out"/bin/*.bat
           wrapProgram "$out/bin/${project.application.name}" --set-default JAVA_HOME ${javaHome jdk'}
         ''}
@@ -250,8 +250,17 @@ let
             cp "$built/bin/$executable" "$out/bin/$executable"
           done
         ''}
+        ${lib.optionalString (archives != [ ]) ''
+          mkdir -p "$out/${archiveDirectory}"
+          for archive in ${lib.escapeShellArgs archives}; do
+            if [ ! -f "$built/archives/$archive" ]; then
+              echo "gradle-purifier: the lock names the archive $archive, which this build of ${project.id} did not make; run gradle-purifier lock" >&2
+              exit 1
+            fi
+            cp "$built/archives/$archive" "$out/${archiveDirectory}/$archive"
+          done
+        ''}
         ${lib.optionalString hasPublications ''
-          maven=''$${mavenOutput}
           cp -r "$built/maven" "$maven"
           link() {
             # $1 publication, $2 key, $3 the artifact's directory, $4 its
@@ -304,6 +313,9 @@ let
             );
           }) project.publications
         );
+        # The archives of `assemble` by key, such as archives."app.jar":
+        # the file name of the archive without the project's version.
+        archives = lib.genAttrs archives (key: "${finalAttrs.finalPackage}/${archiveDirectory}/${key}");
       };
       meta = {
         description = "${project.path} of a Gradle build, built by gradle-purifier";

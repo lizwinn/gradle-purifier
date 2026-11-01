@@ -103,6 +103,24 @@ def nativeExecutables = { project ->
     executables.sort { it.name }
 }
 
+// The archives a project's `assemble` makes (jar, sources jar, Spring
+// Boot's bootJar, a shadow jar, distZip and so on), each with a key: its
+// file name without the project's version.
+def assembleArchives = { project ->
+    def assemble = project.tasks.findByName('assemble')
+    if (assemble == null) {
+        return []
+    }
+    assemble.taskDependencies.getDependencies(assemble)
+        .findAll { it instanceof org.gradle.api.tasks.bundling.AbstractArchiveTask && it.enabled }
+        .collect { task ->
+            def parts = [task.archiveBaseName.getOrNull(), task.archiveAppendix.getOrNull(), task.archiveClassifier.getOrNull()]
+                .findAll { it }
+            [key: "${parts.join('-')}.${task.archiveExtension.get()}".toString(), task: task]
+        }
+        .sort { it.key }
+}
+
 // The name of a project in the lockfile and in the Nix builder: the root
 // project's name for the root project, and its path with ":" as "-"
 // otherwise.
@@ -159,9 +177,23 @@ allprojects { project ->
         task.group = 'gradle-purifier'
         task.description = 'Builds what the Nix package of this project holds.'
         task.dependsOn(project.tasks.matching { t ->
-            t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall', 'purifierNativeInstall'] ||
+            t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall', 'purifierNativeInstall', 'purifierArchives'] ||
                 (runCheck && t.name == 'check')
         })
+    }
+    // The archives of `assemble` go to archives/, under their keys.
+    project.afterEvaluate {
+        def archives = assembleArchives(project)
+        if (!archives.isEmpty()) {
+            project.tasks.register('purifierArchives', Sync) { task ->
+                archives.each { a ->
+                    task.from(a.task) {
+                        it.rename { a.key }
+                    }
+                }
+                task.into(new File(outputDir, 'archives'))
+            }
+        }
     }
     // Kotlin/Native's release executables go to bin/, without the .kexe
     // of their file names.
@@ -308,8 +340,11 @@ if (rootBuild && mode == 'lock') {
                 publications: publications.sort { it.name },
                 application : application == null ? null : [name: application.applicationName],
                 executables : nativeExecutables(project).collect { it.name },
+                archives    : assembleArchives(project).collect { it.key },
             ]
-        }.findAll { !it.publications.isEmpty() || it.application != null || !it.executables.isEmpty() }
+        }.findAll {
+            !it.publications.isEmpty() || it.application != null || !it.executables.isEmpty() || !it.archives.isEmpty()
+        }
         def file = new File(output, 'projects.json')
         file.parentFile.mkdirs()
         file.text = JsonOutput.prettyPrint(JsonOutput.toJson([
