@@ -123,6 +123,13 @@ prefetch, the init script says so and the build resolves the usual way
 until `prefetch` runs again. `prefetch` warns when `JAVA_HOME` names
 another Java major version than the lock, and prints the JDK to use.
 
+Gradle keeps a lockfile of its own only in a build that turns on its
+dependency locking. Without one, `gradle-purifier.lock.json` records the
+resolution as well as the downloads: it holds the version listings
+(`maven-metadata.xml`) that dynamic versions resolve through, and `lock`
+resolves from them again. In a build with dependency locking, `lock`
+keeps the resolution of Gradle's lockfiles as they are.
+
 These are the commands:
 
 - `gradle-purifier lock` runs Gradle and records the downloads. It makes
@@ -231,8 +238,10 @@ Some files are recorded in a particular way:
   the downloader names. In the sandbox, the builder unpacks the archives,
   patches their programs with `autoPatchelf`, and links programs with the
   dynamic linker of nixpkgs. A toolchain runs on the machine it was made
-  for, so the lockfile records the host, and its entries are needed on
-  that system only. Kotlin/Native 2.2 crashes the JVM on JDK 21, so lock
+  for, so the lockfile records the host, and a build with Kotlin/Native
+  targets builds on the system its lock was made on, x86_64-linux or
+  aarch64-linux. Lock it on each system that builds it, with a lockfile
+  per system kept outside the tree. Kotlin/Native 2.2 crashes the JVM on JDK 21, so lock
   such a build with `--java 17`. On NixOS, the lock run needs a
   conventional dynamic loader, such as
   [nix-ld](https://github.com/nix-community/nix-ld) provides, because it
