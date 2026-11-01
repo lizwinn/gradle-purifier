@@ -24,11 +24,19 @@ lib=@lib@
 recorder=@recorder@
 default_java=@java@
 lock_version=@lockVersion@
-# The nixpkgs whose package set `publish` builds the packages with.
+# The nixpkgs whose package set `publish` builds the packages with, and
+# the Kotlin/Native toolchain of the interactive mode.
 nixpkgs=@nixpkgs@
+# What Kotlin/Native's JNI libraries need, and the dynamic linker the
+# programs it links name, from that package set.
+konan_library_path=@konanLibraryPath@
+dynamic_linker=@dynamicLinker@
 
 lockfile=gradle-purifier.lock.json
 portal=https/plugins.gradle.org/m2
+# The hosts Kotlin/Native downloads its toolchain from: its
+# dependenciesUrl, and the CDN that redirects to.
+konan_hosts=(download.jetbrains.com download-cdn.jetbrains.com)
 
 die() {
   echo "gradle-purifier: $*" >&2
@@ -38,12 +46,14 @@ die() {
 usage() {
   cat <<'EOF'
 Usage:
-  gradle-purifier lock [--relock] [-- <gradle arguments>]
+  gradle-purifier lock [--relock] [--java <major>] [-- <gradle arguments>]
       Writes gradle-purifier.lock.json: every file the build downloads,
       by URL and hash, and the projects the Nix builder makes packages of.
       The lock is renewed only when the build definition changed, unless
-      --relock is given. The gradle arguments are recorded in the lock and
-      passed to every Gradle run of the lock.
+      --relock is given. Gradle runs on JAVA_HOME, on nixpkgs' JDK of the
+      major version --java names, or on the command's JDK 21. The gradle
+      arguments are recorded in the lock and passed to every Gradle run of
+      the lock.
   gradle-purifier publish [<gradle arguments>]
       Builds every publishing project with Nix from the lockfile, then
       runs the build's publish tasks (publish, unless gradle arguments
@@ -52,15 +62,38 @@ Usage:
   gradle-purifier <gradle arguments>
       Runs Gradle offline on the locked downloads when the lockfile is
       current, and ./gradlew otherwise.
+
+publish and the runs on the locked downloads use nixpkgs' JDK of the
+Java major version the lock was made with, or the JDK that
+GRADLE_PURIFIER_JAVA_HOME names.
 EOF
 }
 
+# The home of nixpkgs' headless JDK of the major version $1, built with
+# Nix (GC root in .gradle/purifier).
+nixpkgs_jdk() {
+  local out
+  out=$(nix-build --quiet --out-link "$PWD/.gradle/purifier/jdk-$1" "$nixpkgs" \
+    -A "javaPackages.compiler.openjdk$1.headless") || die "nixpkgs has no headless OpenJDK $1"
+  printf '%s/lib/openjdk' "$out"
+}
+
+# The JDK to run Gradle on: JAVA_HOME when it is set; otherwise nixpkgs'
+# JDK of the major version $1 when it is given, and the command's own JDK
+# when it is not.
 java_home() {
   if [ -n "${JAVA_HOME:-}" ]; then
     echo "$JAVA_HOME"
+  elif [ -n "${1:-}" ]; then
+    nixpkgs_jdk "$1"
   else
     echo "$default_java"
   fi
+}
+
+# The major version of the Java the lockfile was made with.
+locked_java_major() {
+  jq -r '.javaVersion | split(".") | .[0]' "$lockfile"
 }
 
 require_build_root() {
@@ -152,14 +185,50 @@ copy_build() {
   rsync -a --delete "${excludes[@]}" ./ "$target/"
 }
 
+# Kotlin/Native downloads its toolchain (LLVM, a GCC toolchain with a
+# sysroot, and more) with its own downloader, and deletes each archive
+# once it has extracted it. The downloader names every download in the
+# build's output, as "Downloading dependency <url> to <file>". Records
+# each such URL from the Gradle output $1 as a download into the records
+# file $2, fetching it into the store for its hash, and writes the
+# archives' paths in the tree of locked downloads to the file $3, one per
+# line, for the lockfile's konanDependencies.
+record_konan_dependencies() {
+  local log=$1 records=$2 list=$3
+  : >"$list"
+  local url path hash
+  while IFS= read -r url; do
+    echo "gradle-purifier: fetching $url" >&2
+    hash=$(nix --extra-experimental-features nix-command store prefetch-file --json --hash-type sha256 "$url" | jq -r '.hash')
+    path=$(tree_path "$url")
+    printf '%s\t%s\t%s\n' "$path" "$url" "$hash" >>"$records"
+    echo "$path" >>"$list"
+  done < <(sed -n 's/^Downloading dependency \(https\?:\/\/[^ ]*\) to .*/\1/p' "$log" | sort -u)
+}
+
+# The Kotlin/Native name of this machine. A Kotlin/Native toolchain runs
+# on the machine it was made for, so the lock records it.
+konan_host() {
+  case $(uname -m) in
+    x86_64) echo linux_x64 ;;
+    aarch64 | arm64) echo linux_arm64 ;;
+    *) uname -m ;;
+  esac
+}
+
 lock_command() {
-  local relock=
+  local relock='' java_major=''
   while [ $# -gt 0 ]; do
     case $1 in
       --relock) relock=1; shift ;;
+      --java)
+        [ $# -ge 2 ] || die "--java takes a Java major version, such as 17"
+        java_major=$2
+        shift 2
+        ;;
       --) shift; break ;;
       -h | --help) usage; exit 0 ;;
-      *) die "lock takes --relock and, after --, gradle arguments; got $1" ;;
+      *) die "lock takes --relock, --java <major> and, after --, gradle arguments; got $1" ;;
     esac
   done
   local gradle_args=("$@")
@@ -192,12 +261,12 @@ lock_command() {
   local records=$work/records.tsv
   printf '%s\t%s\t%s\n' "$(tree_path "$url")" "$url" "$dist_hash" >"$records"
   local java
-  java=$(java_home)
+  java=$(java_home "$java_major")
   # Empty jdk.http.auth.*.disabledSchemes let the recorder send the Basic
   # credentials of an https_proxy URL to the proxy, for HTTPS tunnels and
   # for plain HTTP alike.
   "$java/bin/java" -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes= \
-    -cp "$recorder" Recorder "$records" "$work/port" &
+    -cp "$recorder" Recorder "$records" "$work/port" "${konan_hosts[@]}" &
   local recorder_pid=$!
   # shellcheck disable=SC2064 # the PID is known now
   trap "kill $recorder_pid 2>/dev/null || true" EXIT
@@ -208,16 +277,21 @@ lock_command() {
     sleep 0.1
     waited=$((waited + 1))
   done
-  local base
-  base=http://127.0.0.1:$(cat "$work/port")
+  local ports base tunnel_port
+  read -r -a ports <"$work/port" || true
+  base=http://127.0.0.1:${ports[0]}
+  tunnel_port=${ports[1]}
 
   echo "gradle-purifier: running the lock build in $work/build" >&2
   (
     cd "$work/build" || exit 1
     # Gradle's own HTTP client reaches only the recorder: a remote it
     # contacts directly goes to a proxy that refuses, so a download the
-    # lock would miss fails here rather than in the sandbox.
-    GRADLE_USER_HOME=$work/gradle-home \
+    # lock would miss fails here rather than in the sandbox. The HTTPS
+    # proxy is the recorder's tunnel, which reaches Kotlin/Native's
+    # download host and refuses every other.
+    KONAN_DATA_DIR=$work/konan \
+      GRADLE_USER_HOME=$work/gradle-home \
       GRADLE_PURIFIER_MODE=lock \
       GRADLE_PURIFIER_REPOSITORY=$base \
       GRADLE_PURIFIER_OUTPUT=$work/output \
@@ -228,16 +302,17 @@ lock_command() {
       "-Dorg.gradle.internal.plugins.portal.url.override=$base/$portal" \
       "-Djava.io.tmpdir=${TMPDIR:-/tmp}" \
       -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=9 \
-      -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=9 \
+      -Dhttps.proxyHost=127.0.0.1 "-Dhttps.proxyPort=$tunnel_port" \
       '-Dhttp.nonProxyHosts=localhost|127.0.0.1' \
       -Porg.gradle.java.installations.auto-download=false \
       -Pkotlin.compiler.execution.strategy=in-process \
       "${gradle_args[@]}" \
-      purifierLock </dev/null
+      purifierLock </dev/null 2>&1 | tee "$work/gradle.log"
   )
   kill "$recorder_pid" 2>/dev/null || true
   wait "$recorder_pid" 2>/dev/null || true
   trap - EXIT
+  record_konan_dependencies "$work/gradle.log" "$records" "$work/konan-dependencies"
 
   [ -f "$work/output/projects.json" ] || die "the lock build wrote no projects.json"
   local args_json
@@ -246,6 +321,8 @@ lock_command() {
     --argjson version "$lock_version" \
     --slurpfile described "$work/output/projects.json" \
     --rawfile records "$records" \
+    --rawfile konanDependencies "$work/konan-dependencies" \
+    --arg konanHost "$(konan_host)" \
     --arg distribution "$(tree_path "$url")" \
     --arg inputsHash "$hash" \
     --argjson gradleArguments "$args_json" \
@@ -257,6 +334,8 @@ lock_command() {
       gradleArguments: $gradleArguments,
       inputsHash: $inputsHash,
       projects: $described[0].projects,
+      konanDependencies: ($konanDependencies | split("\n") | map(select(length > 0)) | unique),
+      konanHost: $konanHost,
       artifacts: (
         $records | split("\n") | map(select(length > 0) | split("\t")
           | if .[1] == "inline" then {path: .[0], contents: (.[2] | @base64d)}
@@ -313,19 +392,53 @@ lock_is_current() {
   fi
 }
 
+# When the lock holds a Kotlin/Native toolchain, builds it with Nix,
+# unpacked and patched (konan.nix), as the dependencies of the
+# Kotlin/Native data directory .gradle/purifier/konan, and sets the
+# environment Kotlin/Native runs with, as the Nix builder does.
+setup_konan() {
+  [ "$(jq '.konanDependencies // [] | length' "$lockfile")" -gt 0 ] || return 0
+  local state=$PWD/.gradle/purifier
+  local toolchain
+  toolchain=$(nix-build --quiet --out-link "$state/konan-gcroot" \
+    --expr "{ lockFile }: (import $nixpkgs { }).callPackage $lib/konan.nix { inherit lockFile; }" \
+    --arg lockFile "$PWD/$lockfile")
+  export KONAN_DATA_DIR=$state/konan
+  rm -rf "$KONAN_DATA_DIR/dependencies"
+  mkdir -p "$KONAN_DATA_DIR/dependencies"
+  local dependency
+  for dependency in "$toolchain"/*; do
+    ln -s "$dependency" "$KONAN_DATA_DIR/dependencies/"
+  done
+  cp "$toolchain/.extracted" "$KONAN_DATA_DIR/dependencies/.extracted"
+  export LD_LIBRARY_PATH=$konan_library_path${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+  local host
+  host=$(konan_host)
+  export GRADLE_PURIFIER_KONAN_PROPERTIES="dynamicLinker.$host=$dynamic_linker"
+}
+
 # Runs the Gradle of the lock on the locked downloads, in the init
 # script's mode $1, with the gradle arguments that follow. The variables
 # of the environment pass on to Gradle.
 run_locked_gradle() {
   local mode=$1
   shift
+  setup_konan
   local tree
   tree=$(realize)
   local gradle_home
   gradle_home=$(unpack_distribution "$tree/$(jq -r '.distribution' "$lockfile")")
   local locked_args=()
   mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
-  JAVA_HOME=$(java_home) \
+  # A run on the lock takes the Java major version the lock was made with,
+  # whatever JAVA_HOME names, unless GRADLE_PURIFIER_JAVA_HOME names a JDK.
+  local java
+  if [ -n "${GRADLE_PURIFIER_JAVA_HOME:-}" ]; then
+    java=$GRADLE_PURIFIER_JAVA_HOME
+  else
+    java=$(nixpkgs_jdk "$(locked_java_major)")
+  fi
+  JAVA_HOME=$java \
     GRADLE_PURIFIER_MODE=$mode \
     GRADLE_PURIFIER_REPOSITORY=file://$tree \
     exec "$gradle_home/bin/gradle" \

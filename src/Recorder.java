@@ -12,6 +12,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.PasswordAuthentication;
 import java.net.ProxySelector;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.http.HttpClient;
@@ -25,9 +27,11 @@ import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -41,9 +45,10 @@ import java.util.concurrent.Executors;
  * contents change over time (see {@link #isMutable}), the line holds "inline" and the contents
  * in Base64 instead of the URL and the hash.
  *
- * <p>Usage: {@code java Recorder <records file> <port file>}. The server listens on an ephemeral
- * port of the loopback address and writes the port to the port file once it is ready. It runs
- * until it is killed.
+ * <p>Usage: {@code java Recorder <records file> <port file> [<tunnel host>...]}. The server
+ * listens on an ephemeral port of the loopback address, and an HTTPS proxy that tunnels to the
+ * tunnel hosts only listens on another (see {@link #startTunnel}). Once both are ready, it writes
+ * the two ports to the port file, separated by a space. It runs until it is killed.
  *
  * <p>The server forwards the Authorization header, so a lock run can read a repository that
  * needs credentials. It takes its proxy from the https_proxy or HTTPS_PROXY environment
@@ -69,12 +74,13 @@ public final class Recorder {
   }
 
   public static void main(String[] args) throws IOException {
-    if (args.length != 2) {
-      System.err.println("usage: java Recorder <records file> <port file>");
+    if (args.length < 2) {
+      System.err.println("usage: java Recorder <records file> <port file> [<tunnel host>...]");
       System.exit(2);
     }
     Path recordsFile = Path.of(args[0]);
     Path portFile = Path.of(args[1]);
+    Set<String> tunnelHosts = Set.of(Arrays.copyOfRange(args, 2, args.length));
 
     HttpClient.Builder builder =
         HttpClient.newBuilder()
@@ -119,9 +125,134 @@ public final class Recorder {
     server.createContext("/", recorder::handle);
     server.start();
 
+    ServerSocket tunnel = startTunnel(tunnelHosts, proxy);
+
     Path tmp = Files.createTempFile(portFile.toAbsolutePath().getParent(), "port", ".tmp");
-    Files.writeString(tmp, Integer.toString(server.getAddress().getPort()));
+    Files.writeString(tmp, server.getAddress().getPort() + " " + tunnel.getLocalPort() + "\n");
     Files.move(tmp, portFile, StandardCopyOption.ATOMIC_MOVE);
+  }
+
+  /**
+   * Starts an HTTPS proxy on an ephemeral port of the loopback address that tunnels to the hosts
+   * in `hosts` and refuses every other host. It tunnels through `upstream` when that is not
+   * null. A downloader that uses the proxy settings of the JVM, such as the one in Kotlin/Native,
+   * reaches its own host through it. The tunnel carries TLS, so the command records what such a
+   * downloader fetched from the directory where the downloader keeps it.
+   */
+  private static ServerSocket startTunnel(Set<String> hosts, URI upstream) throws IOException {
+    ServerSocket socket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
+    ExecutorService pool = Executors.newCachedThreadPool();
+    Thread acceptor =
+        new Thread(
+            () -> {
+              while (true) {
+                try {
+                  Socket client = socket.accept();
+                  pool.execute(() -> tunnel(client, hosts, upstream));
+                } catch (IOException e) {
+                  System.err.println("gradle-purifier recorder: tunnel: " + e);
+                  return;
+                }
+              }
+            },
+            "tunnel");
+    acceptor.start();
+    return socket;
+  }
+
+  private static void tunnel(Socket client, Set<String> hosts, URI upstream) {
+    try (client) {
+      InputStream fromClient = client.getInputStream();
+      OutputStream toClient = client.getOutputStream();
+      String[] request = readHead(fromClient).split("\r\n", 2)[0].split(" ");
+      if (request.length < 2 || !request[0].equals("CONNECT")) {
+        toClient.write(status("405 Method Not Allowed"));
+        return;
+      }
+      String target = request[1];
+      int colon = target.lastIndexOf(':');
+      String host = colon == -1 ? target : target.substring(0, colon);
+      int port = colon == -1 ? 443 : Integer.parseInt(target.substring(colon + 1));
+      if (!hosts.contains(host)) {
+        System.err.println("gradle-purifier recorder: refused a tunnel to " + target);
+        toClient.write(status("403 Forbidden"));
+        return;
+      }
+      try (Socket remote = connect(host, port, upstream)) {
+        if (remote == null) {
+          toClient.write(status("502 Bad Gateway"));
+          return;
+        }
+        toClient.write(status("200 Connection Established"));
+        toClient.flush();
+        Thread up =
+            new Thread(
+                () -> {
+                  try {
+                    fromClient.transferTo(remote.getOutputStream());
+                    remote.shutdownOutput();
+                  } catch (IOException e) {
+                    // The other direction ends the tunnel.
+                  }
+                });
+        up.start();
+        remote.getInputStream().transferTo(toClient);
+        up.join();
+      }
+    } catch (IOException e) {
+      System.err.println("gradle-purifier recorder: tunnel: " + e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
+   * A connection to host:port, directly or through the CONNECT method of `upstream`; null when
+   * the upstream proxy refuses.
+   */
+  private static Socket connect(String host, int port, URI upstream) throws IOException {
+    if (upstream == null) {
+      return new Socket(host, port);
+    }
+    Socket socket =
+        new Socket(upstream.getHost(), upstream.getPort() == -1 ? 80 : upstream.getPort());
+    StringBuilder request = new StringBuilder();
+    request.append("CONNECT ").append(host).append(':').append(port).append(" HTTP/1.1\r\n");
+    request.append("Host: ").append(host).append(':').append(port).append("\r\n");
+    String userInfo = upstream.getRawUserInfo();
+    if (userInfo != null) {
+      String credentials =
+          Base64.getEncoder().encodeToString(decode(userInfo).getBytes(StandardCharsets.UTF_8));
+      request.append("Proxy-Authorization: Basic ").append(credentials).append("\r\n");
+    }
+    request.append("\r\n");
+    socket.getOutputStream().write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
+    socket.getOutputStream().flush();
+    String reply = readHead(socket.getInputStream());
+    String[] statusLine = reply.split("\r\n", 2)[0].split(" ");
+    if (statusLine.length < 2 || !statusLine[1].equals("200")) {
+      System.err.println("gradle-purifier recorder: the proxy refused a tunnel to " + host + ": " + reply);
+      socket.close();
+      return null;
+    }
+    return socket;
+  }
+
+  /** Reads an HTTP message head, up to and without the empty line that ends it. */
+  private static String readHead(InputStream in) throws IOException {
+    StringBuilder head = new StringBuilder();
+    int c;
+    while ((c = in.read()) != -1) {
+      head.append((char) c);
+      if (head.length() >= 4 && head.substring(head.length() - 4).equals("\r\n\r\n")) {
+        return head.substring(0, head.length() - 4);
+      }
+    }
+    return head.toString();
+  }
+
+  private static byte[] status(String status) {
+    return ("HTTP/1.1 " + status + "\r\nContent-Length: 0\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1);
   }
 
   private static String decode(String text) {

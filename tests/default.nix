@@ -32,6 +32,13 @@ let
     doCheck = true;
   };
 
+  # A Kotlin/Native build with a linuxX64 library, its tests, and an
+  # executable. Its lock holds the Kotlin/Native toolchain of x86_64-linux.
+  kotlinNative = buildGradleProject {
+    src = ./fixtures/kotlin-native;
+    doCheck = true;
+  };
+
   # Fails unless every file of `files` (paths relative to `root`) exists.
   expectFiles =
     name: root: files:
@@ -120,4 +127,25 @@ in
     in
     assert !result.success;
     runCommand "nix-library-version" { } "touch $out";
+}
+# The Kotlin/Native fixture's lock holds the toolchain of x86_64-linux,
+# so its checks build there.
+// lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+  kotlin-native = kotlinNative.packages.kotlin-native;
+  # The executable runs from its package, and its tests ran in the build.
+  kotlin-native-runs = runCommand "kotlin-native-runs" { } ''
+    output=$(${lib.getExe kotlinNative.packages.kotlin-native})
+    if [ "$output" != "Hello, Nix!" ]; then
+      echo "the executable printed: $output" >&2
+      exit 1
+    fi
+    touch $out
+  '';
+  kotlin-native-artifacts =
+    expectFiles "kotlin-native-artifacts" kotlinNative.packages.kotlin-native.maven
+      [
+        "nix-support/artifacts/linuxX64/kotlin-native-linuxx64.klib"
+        "nix-support/artifacts/linuxX64/module"
+        "nix-support/artifacts/kotlinMultiplatform/module"
+      ];
 }

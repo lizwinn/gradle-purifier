@@ -21,10 +21,12 @@
 #                    application and in `out` otherwise
 {
   lib,
+  stdenv,
   stdenvNoCC,
   callPackage,
   makeWrapper,
   unzip,
+  zlib,
   # The JDKs a build can run on; the default JDK of a build is the headless
   # one of the major version its lock was made with.
   javaPackages,
@@ -101,6 +103,39 @@ let
 
   repository = callPackage ./repository.nix { inherit lockFile fetchurl; };
 
+  # Kotlin/Native's toolchain, when the lock holds one (see konan.nix).
+  konan = callPackage ./konan.nix { inherit lockFile fetchurl; };
+  hasKonan = (lock.konanDependencies or [ ]) != [ ];
+  # The Kotlin/Native name of the host, whose dynamic linker the programs
+  # Kotlin/Native links name.
+  konanHost = if stdenv.hostPlatform.isAarch64 then "linux_arm64" else "linux_x64";
+  konanSetup =
+    assert
+      !hasKonan
+      || lock.konanHost == konanHost
+      || throw "gradle-purifier: the lock holds the Kotlin/Native toolchain of ${lock.konanHost}, which does not run on ${konanHost}; make the lock on ${konanHost}.";
+    ''
+      # Kotlin/Native finds its toolchain already extracted, and downloads
+      # nothing. It writes its distribution and its caches beside it.
+      export KONAN_DATA_DIR="$TMPDIR/konan"
+      mkdir -p "$KONAN_DATA_DIR/dependencies"
+      for dependency in ${konan}/*; do
+        ln -s "$dependency" "$KONAN_DATA_DIR/dependencies/"
+      done
+      cp ${konan}/.extracted "$KONAN_DATA_DIR/dependencies/.extracted"
+      # The compiler loads JNI libraries of its distribution, which need
+      # these.
+      export LD_LIBRARY_PATH=${
+        lib.makeLibraryPath [
+          stdenv.cc.cc.lib
+          zlib
+        ]
+      }
+      # The programs Kotlin/Native links name nixpkgs' dynamic linker, so
+      # the tests run in the sandbox.
+      export GRADLE_PURIFIER_KONAN_PROPERTIES="dynamicLinker.${konanHost}=${stdenv.cc.bintools.dynamicLinker}"
+    '';
+
   distribution = stdenvNoCC.mkDerivation {
     name = "gradle-${lock.gradleVersion}";
     src = "${repository}/${lock.distribution}";
@@ -137,6 +172,7 @@ let
     export GRADLE_PURIFIER_CHECK=${if doCheck then "1" else "0"}
     export JAVA_HOME=${javaHome jdk'}
     mkdir -p "$HOME" "$GRADLE_USER_HOME"
+    ${lib.optionalString hasKonan konanSetup}
     ${distribution}/bin/gradle \
       --offline --no-daemon --no-configuration-cache --no-build-cache --no-watch-fs \
       --console=plain --stacktrace \
@@ -163,8 +199,20 @@ let
     project:
     let
       hasApplication = project.application != null;
+      executables = project.executables or [ ];
+      hasExecutables = executables != [ ];
       hasPublications = project.publications != [ ];
-      mavenOutput = if hasApplication then "maven" else "out";
+      # `out` holds the programs when the project has any, and the Maven
+      # publications otherwise.
+      hasPrograms = hasApplication || hasExecutables;
+      mavenOutput = if hasPrograms then "maven" else "out";
+      mainProgram =
+        if hasApplication then
+          project.application.name
+        else if builtins.length executables == 1 then
+          builtins.head executables
+        else
+          null;
       artifactFile =
         package: publication: key:
         "${package.${mavenOutput}}/${linkDirectory}/${publication}/${key}";
@@ -173,7 +221,7 @@ let
     stdenvNoCC.mkDerivation (finalAttrs: {
       name = project.id;
       src = filteredSrc;
-      outputs = [ "out" ] ++ lib.optional (hasApplication && hasPublications) "maven";
+      outputs = [ "out" ] ++ lib.optional (hasPrograms && hasPublications) "maven";
       nativeBuildInputs = [ makeWrapper ];
       dontConfigure = true;
       # The outputs are jars, POMs and start scripts; fixup has nothing to
@@ -191,6 +239,16 @@ let
           cp -r "$built/application" "$out"
           rm -f "$out"/bin/*.bat
           wrapProgram "$out/bin/${project.application.name}" --set-default JAVA_HOME ${javaHome jdk'}
+        ''}
+        ${lib.optionalString hasExecutables ''
+          mkdir -p "$out/bin"
+          for executable in ${lib.escapeShellArgs executables}; do
+            if [ ! -f "$built/bin/$executable" ]; then
+              echo "gradle-purifier: the lock names the executable $executable, which this build of ${project.id} did not link; run gradle-purifier lock" >&2
+              exit 1
+            fi
+            cp "$built/bin/$executable" "$out/bin/$executable"
+          done
         ''}
         ${lib.optionalString hasPublications ''
           maven=''$${mavenOutput}
@@ -250,7 +308,7 @@ let
       meta = {
         description = "${project.path} of a Gradle build, built by gradle-purifier";
       }
-      // lib.optionalAttrs hasApplication { mainProgram = project.application.name; };
+      // lib.optionalAttrs (mainProgram != null) { inherit mainProgram; };
     });
 
   packages = builtins.mapAttrs (_: mkPackage) lock.projectsById;
@@ -260,6 +318,7 @@ in
     lock
     repository
     distribution
+    konan
     packages
     ;
   jdk = jdk';

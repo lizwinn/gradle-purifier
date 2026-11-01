@@ -50,7 +50,10 @@ expect_no_downloads() {
 
 # Each copy holds the files of the fixture that git tracks, as a clean
 # checkout does.
-for fixture in java-library kotlin-app; do
+fixtures=(java-library kotlin-app)
+# The Kotlin/Native fixture's lock holds the toolchain of x86_64-linux.
+[ "$(uname -m)" = x86_64 ] && fixtures+=(kotlin-native)
+for fixture in "${fixtures[@]}"; do
   (cd "$root/tests/fixtures/$fixture" && git ls-files -z) | while IFS= read -r -d '' file; do
     mkdir -p "$work/$fixture/$(dirname "$file")"
     cp "$root/tests/fixtures/$fixture/$file" "$work/$fixture/$file"
@@ -85,6 +88,13 @@ echo "== kotlin-app: build and run" >&2
 output=$(run kotlin-app build :app:run) || { echo "$output"; fail "kotlin-app: build failed"; }
 grep -q '^Hello, Nix!$' <<<"$output" || { echo "$output"; fail "kotlin-app: the app did not greet"; }
 expect_no_downloads kotlin-app
+
+if [ "$(uname -m)" = x86_64 ]; then
+  echo "== kotlin-native: build, test and run on the locked toolchain" >&2
+  output=$(run kotlin-native build runReleaseExecutableLinuxX64) || { echo "$output"; fail "kotlin-native: build failed"; }
+  grep -q '^Hello, Nix!$' <<<"$output" || { echo "$output"; fail "kotlin-native: the executable did not greet"; }
+  expect_no_downloads kotlin-native
+fi
 
 echo "== kotlin-app: a changed build definition falls back to ./gradlew" >&2
 echo '// changed' >>"$work/kotlin-app/app/build.gradle.kts"

@@ -16,6 +16,10 @@
 //   GRADLE_PURIFIER_CHECK       "1" makes purifierBuild run `check` too
 //   GRADLE_PURIFIER_ARTIFACTS   in publish mode, a JSON object from project
 //                               id to the Maven output of its Nix package
+//   GRADLE_PURIFIER_KONAN_PROPERTIES
+//                               konan.properties settings that every
+//                               Kotlin/Native link overrides, such as the
+//                               dynamic linker of the programs it links
 //
 // A remote repository at https://host/path is read from
 // <base>/https/host/path. The recorder fetches each such URL from its
@@ -46,6 +50,7 @@ if (base == null || base.isEmpty()) {
     throw new GradleException('gradle-purifier: GRADLE_PURIFIER_MODE is set but GRADLE_PURIFIER_REPOSITORY is not')
 }
 def output = System.getenv('GRADLE_PURIFIER_OUTPUT')
+def konanProperties = System.getenv('GRADLE_PURIFIER_KONAN_PROPERTIES')
 def runCheck = System.getenv('GRADLE_PURIFIER_CHECK') == '1'
 def rootBuild = gradle.parent == null
 
@@ -76,6 +81,28 @@ def purify = { repository ->
     }
 }
 
+// The release executables Kotlin/Native links for a project, each with its
+// base name and its binary.
+def nativeExecutables = { project ->
+    def kotlin = project.extensions.findByName('kotlin')
+    if (kotlin == null || !kotlin.hasProperty('targets')) {
+        return []
+    }
+    def executables = []
+    kotlin.targets.each { target ->
+        if (!target.hasProperty('binaries')) {
+            return
+        }
+        target.binaries.each { binary ->
+            if (binary.class.name.startsWith('org.jetbrains.kotlin.gradle.plugin.mpp.Executable') &&
+                binary.buildType.name() == 'RELEASE') {
+                executables << [name: binary.baseName, binary: binary]
+            }
+        }
+    }
+    executables.sort { it.name }
+}
+
 // The name of a project in the lockfile and in the Nix builder: the root
 // project's name for the root project, and its path with ":" as "-"
 // otherwise.
@@ -92,6 +119,23 @@ beforeSettings { settings ->
 allprojects { project ->
     project.buildscript.repositories.all(purify)
     project.repositories.all(purify)
+
+    // Every Kotlin/Native binary, test binaries included, links with the
+    // konan.properties overrides.
+    if (konanProperties) {
+        project.afterEvaluate {
+            def kotlin = project.extensions.findByName('kotlin')
+            if (kotlin != null && kotlin.hasProperty('targets')) {
+                kotlin.targets.all { target ->
+                    if (target.hasProperty('binaries')) {
+                        target.binaries.all { binary ->
+                            binary.freeCompilerArgs += ["-Xoverride-konan-properties=${konanProperties}".toString()]
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     if (!rootBuild || mode == 'interactive' || mode == 'publish') {
         return
@@ -115,9 +159,25 @@ allprojects { project ->
         task.group = 'gradle-purifier'
         task.description = 'Builds what the Nix package of this project holds.'
         task.dependsOn(project.tasks.matching { t ->
-            t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall'] ||
+            t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall', 'purifierNativeInstall'] ||
                 (runCheck && t.name == 'check')
         })
+    }
+    // Kotlin/Native's release executables go to bin/, without the .kexe
+    // of their file names.
+    project.afterEvaluate {
+        def executables = nativeExecutables(project)
+        if (!executables.isEmpty()) {
+            project.tasks.register('purifierNativeInstall', Sync) { task ->
+                executables.each { e ->
+                    task.from(e.binary.linkTaskProvider) {
+                        it.include "${e.name}.kexe"
+                        it.rename { e.name }
+                    }
+                }
+                task.into(new File(outputDir, 'bin'))
+            }
+        }
     }
     project.pluginManager.withPlugin('application') {
         project.tasks.register('purifierInstall', Sync) { task ->
@@ -247,8 +307,9 @@ if (rootBuild && mode == 'lock') {
                 path        : project.path,
                 publications: publications.sort { it.name },
                 application : application == null ? null : [name: application.applicationName],
+                executables : nativeExecutables(project).collect { it.name },
             ]
-        }.findAll { !it.publications.isEmpty() || it.application != null }
+        }.findAll { !it.publications.isEmpty() || it.application != null || !it.executables.isEmpty() }
         def file = new File(output, 'projects.json')
         file.parentFile.mkdirs()
         file.text = JsonOutput.prettyPrint(JsonOutput.toJson([

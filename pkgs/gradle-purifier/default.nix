@@ -7,7 +7,9 @@
   # The nixpkgs source of the package set, which `gradle-purifier publish`
   # builds the packages with.
   path,
+  stdenv,
   stdenvNoCC,
+  zlib,
   writeShellApplication,
   jdk21_headless,
   coreutils,
@@ -52,13 +54,26 @@ writeShellApplication {
   ];
   text =
     builtins.replaceStrings
-      [ "@lib@" "@recorder@" "@java@" "@lockVersion@" "@nixpkgs@" ]
+      [
+        "@lib@"
+        "@recorder@"
+        "@java@"
+        "@lockVersion@"
+        "@nixpkgs@"
+        "@konanLibraryPath@"
+        "@dynamicLinker@"
+      ]
       [
         "${nixLib}"
         "${recorder}"
         "${jdk.home or "${jdk}/lib/openjdk"}"
         (toString (import ../../nix/lib/lock-version.nix))
         "${path}"
+        (lib.makeLibraryPath [
+          stdenv.cc.cc.lib
+          zlib
+        ])
+        stdenv.cc.bintools.dynamicLinker
       ]
       (builtins.readFile ../../src/gradle-purifier.sh);
   derivationArgs.passthru = {

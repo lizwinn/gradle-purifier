@@ -75,8 +75,11 @@ distribution the wrapper names.
 nix run github:nix-purifiers/gradle-purifier -- lock
 ```
 
-Commit `gradle-purifier.lock.json`. Gradle arguments after `--` go into
-the lockfile and into every Gradle run of the lock:
+The lock run uses `JAVA_HOME`, or nixpkgs' JDK of a major version with
+`--java 17`, or else the command's JDK 21. The builds of a lockfile use
+the Java major version it was made with. Commit
+`gradle-purifier.lock.json`. Gradle arguments after `--` go into the
+lockfile and into every Gradle run of the lock:
 
 ```zsh
 nix run github:nix-purifiers/gradle-purifier -- lock -- -Pflavor=release
@@ -147,7 +150,9 @@ nix run github:nix-purifiers/gradle-purifier -- build
 With a current lockfile, the command fetches the locked downloads through
 Nix (one GC root, in `.gradle/purifier`), links them into
 `.gradle/purifier/repository`, and runs the lock's Gradle with `--offline`,
-every repository pointing into that tree. Gradle reads the files where
+every repository pointing into that tree. It runs on nixpkgs' JDK of the
+Java major version of the lock, whatever `JAVA_HOME` names;
+`GRADLE_PURIFIER_JAVA_HOME` names another. Gradle reads the files where
 they are, so its own download cache stays empty. When the lockfile is
 missing, has another format, or was made from another build definition,
 the command says so and runs `./gradlew` instead.
@@ -176,20 +181,46 @@ points at the temporary directory of the build, where the compiler writes
 its session files. A `jvmToolchain(…)` for the JDK the build runs on
 needs nothing more; another version needs that JDK in `toolchainJdks`.
 
+### Kotlin/Native
+
+Kotlin/Native targets build too, with tests and executables. Kotlin/Native
+downloads its toolchain (LLVM, a GCC toolchain with a glibc sysroot,
+libffi) from download.jetbrains.com with its own downloader rather than
+through Gradle's repositories. In the lock run, the recorder gives that
+downloader an HTTPS tunnel to JetBrains' download hosts only, and the
+command records each archive the downloader names in the build's output.
+The lockfile lists them as `konanDependencies`.
+
+In the sandbox, `buildGradleProject` unpacks those archives and patches
+their programs with `autoPatchelf`, so they run on nixpkgs' loader and
+libraries, and gives them to Kotlin/Native as already extracted. The
+programs Kotlin/Native links name nixpkgs' dynamic linker
+(`-Xoverride-konan-properties=dynamicLinker…`), so native tests run in
+the sandbox and a release executable of a project is in its package's
+`bin/`, without its `.kexe` suffix. The interactive mode uses the same
+patched toolchain.
+
+Three things to know:
+
+- **Lock on JDK 17.** Kotlin/Native's compiler 2.2 crashes the JVM on JDK
+  21. Lock with `gradle-purifier lock --java 17`; the builds of the lock
+  then run on JDK 17 too.
+- **One host.** A Kotlin/Native toolchain runs on the machine it was made
+  for, so the lockfile records the host (`konanHost`), and the builder
+  refuses a lock made for another.
+- **NixOS.** The lock run executes the toolchain as downloaded, before
+  anything can patch it, so on NixOS it needs a conventional dynamic
+  loader, such as [nix-ld](https://github.com/nix-community/nix-ld)
+  provides.
+
 ## Limitations
 
-- **Kotlin/Native and Kotlin/JS targets are not supported.** Both download
-  their toolchains outside Gradle's dependency resolution, which is the
-  only channel the init script redirects. Kotlin/Native's compiler fetches
-  LLVM and a sysroot from download.jetbrains.com with its own downloader,
-  and runs prebuilt Linux binaries that expect a conventional
-  `/lib64` dynamic loader, which the Nix sandbox does not have. Kotlin/JS
-  fetches Node.js and Yarn through Ivy repositories, which the lock
-  would record, but Yarn then installs npm packages from the npm registry
-  itself, and the prebuilt Node.js binary has the same loader problem.
-  Supporting them means locking those downloads and running the
-  toolchains from nixpkgs or patched binaries. In a lock run either
-  target fails at its first download.
+- **Kotlin/JS targets are not supported yet.** Kotlin/JS fetches Node.js
+  and Yarn through Ivy repositories, which the lock records, but Yarn then
+  installs npm packages from the npm registry itself, outside Gradle, and
+  the prebuilt Node.js binary expects a conventional `/lib64` dynamic
+  loader, which the Nix sandbox does not have. In a lock run a Kotlin/JS
+  target fails at Yarn's first download.
 - **Credentials.** The lock run sends a repository's `Authorization`
   header on to it, so a lock can be made from a repository that needs
   credentials. The Nix build downloads with the built-in fetcher, which

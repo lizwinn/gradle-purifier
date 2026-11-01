@@ -22,6 +22,11 @@ The tests come in two layers.
      published Kotlin library, a Kotlin Multiplatform library with a JVM
      target, and an application. `kotlin-app-runs` runs the application
      from its package.
+   - The `kotlin-native*` checks, on x86_64-linux, build
+     `tests/fixtures/kotlin-native`, a Kotlin/Native build with a linuxX64
+     library, its tests and a release executable, locked on JDK 17 with
+     Kotlin/Native's toolchain. `kotlin-native-runs` runs the executable
+     from its package.
 2. **Interactive tests** (`tests/interactive.sh`) run outside the sandbox
    with Gradle's network cut off (every JVM gets a proxy that refuses). On
    copies of both fixtures, each with an empty Gradle user home, the

@@ -14,5 +14,11 @@ command=$(nix build --no-link --print-out-paths "$root#gradle-purifier")/bin/gra
 
 for fixture in "$root"/tests/fixtures/*/; do
   echo "== ${fixture#"$root"/}" >&2
-  (cd "$fixture" && "$command" lock "$@")
+  # Kotlin/Native's compiler 2.2 crashes on JDK 21, so its fixture locks
+  # on JDK 17.
+  java=()
+  case $(basename "$fixture") in
+    kotlin-native) java=(--java 17) ;;
+  esac
+  (cd "$fixture" && "$command" lock "${java[@]}" "$@")
 done
