@@ -12,7 +12,13 @@
       "publications": [],
       "application": {
         "name": "app"
-      }
+      },
+      "executables": [],
+      "archives": [
+        "app.jar",
+        "app.tar",
+        "app.zip"
+      ]
     },
     {
       "id": "core",
@@ -36,7 +42,12 @@
           ]
         }
       ],
-      "application": null
+      "application": null,
+      "executables": [],
+      "archives": [
+        "core-sources.jar",
+        "core.jar"
+      ]
     },
     {
       "id": "shared",
@@ -82,9 +93,16 @@
           ]
         }
       ],
-      "application": null
+      "application": null,
+      "executables": [],
+      "archives": [
+        "shared-jvm.jar",
+        "shared-metadata.jar"
+      ]
     }
   ],
+  "konanDependencies": [],
+  "konanHost": "linux_x64",
   "artifacts": [
     {
       "path": "https/plugins.gradle.org/m2/com/google/code/gson/gson-parent/2.11.0/gson-parent-2.11.0.pom",
@@ -909,147 +927,339 @@
       "hash": "sha256-pWM6vVNGfOuRYi2B8umCCAh3FF4LduG3V4hxVDSIXQs="
     },
     {
+      "path": "https/repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3-javadoc.jar"
+      ],
+      "hash": "sha256-sC4DfAmV11qRZSoFIytjW/dD7Ph3KZbZxLmJ/wt7Qsw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3-sources.jar"
+      ],
+      "hash": "sha256-nHD6OHStJryh4HG362mpbTf21UTtp0O0sA6gUPN3sNA="
+    },
+    {
       "path": "https/repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.jar",
       "url": "https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.jar"
+      ],
       "hash": "sha256-Hgp7vvHdeRZTFD8/BdDkiZNL9UgeWKh8nmGc1Gtocps="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.module",
       "url": "https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.module"
+      ],
       "hash": "sha256-J9/TStZlaZDTxzF2NEsJkfLIJwn6swcJs93qj6MAMHA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.pom",
       "url": "https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/github/ben-manes/caffeine/caffeine/2.9.3/caffeine-2.9.3.pom"
+      ],
       "hash": "sha256-b6TxwQGSgG+O8FtdS+e9n1zli4dvZDZNTpDD/AkjI9w="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0-javadoc.jar"
+      ],
+      "hash": "sha256-4gEtNx5jlTfeRj1AqCNmetoUmyGQ6tUohip1AI8znss="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0-sources.jar"
+      ],
+      "hash": "sha256-KTbpsxXXkNimNk8FdLzsnIsteGiLMX4XZcShb574BjI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar",
       "url": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar"
+      ],
       "hash": "sha256-8/yKOgpAIHBqNzsA5/V8JRLdJtH4PSjH04do+GgrIx4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.pom",
       "url": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.pom"
+      ],
       "hash": "sha256-DOkJ8TpWgUhHbl7iAPOA+Yx1ugiXGq8V2ylet3WY7zo="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/com/google/errorprone/error_prone_parent/2.28.0/error_prone_parent-2.28.0.pom",
       "url": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_parent/2.28.0/error_prone_parent-2.28.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/com/google/errorprone/error_prone_parent/2.28.0/error_prone_parent-2.28.0.pom"
+      ],
       "hash": "sha256-rM79u1QWzvX80t3DfbTx/LNKIZPMGlXf5ZcKExs+doM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils-parent/4.12/java-diff-utils-parent-4.12.pom",
       "url": "https://repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils-parent/4.12/java-diff-utils-parent-4.12.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/github/java-diff-utils/java-diff-utils-parent/4.12/java-diff-utils-parent-4.12.pom"
+      ],
       "hash": "sha256-2BHPnxGMwsrRMMlCetVcF01MCm8aAKwa4cm8vsXESxk="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12-javadoc.jar"
+      ],
+      "hash": "sha256-V9JJFk58VR9edtu+YCKWwL1NJKvXY5HnpQKmPbZO5JM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12-sources.jar"
+      ],
+      "hash": "sha256-+iQhe26qEVoF1KjwAD/pE8YnFsohhNLk8X3kp9QqiCI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar",
       "url": "https://repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+      ],
       "hash": "sha256-mZCiA5d49rTMlHkBQcKGiGTqzuBiDGxFlFESGpAc1bU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.pom",
       "url": "https://repo.maven.apache.org/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.pom"
+      ],
       "hash": "sha256-wm4JftyOxoBdExmBfSPU5JbMEBXMVdxSAhEtj2qRZfw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0-javadoc.jar"
+      ],
+      "hash": "sha256-FM7hVS6mDdLpenxrExJ+L113rYrEWPP5Exr5xu1Iybk="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0-sources.jar"
+      ],
+      "hash": "sha256-eil5VHWo2+Zwr9Ekpk592U8Snuy2xSnsqkeqoBuiwBg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.jar",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.jar"
+      ],
       "hash": "sha256-kzZmjziN5ooKLD4RQVT+vSnbGadkTyfE66VI9d6FIlg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.module",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.module"
+      ],
       "hash": "sha256-JhRoWJyZO4j3zK2TOP/YFmud9Mw03jCAZpMrKlyd6VY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.pom",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-api/1.41.0/opentelemetry-api-1.41.0.pom"
+      ],
       "hash": "sha256-vB7w93s71tsLem8WUv20IWmKDlQ3RQSnQZ+xvrRWKZM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0-javadoc.jar"
+      ],
+      "hash": "sha256-fMbJ7H6UQIg5/DIyhLlnFeBIHp87hpjviWDB9EsFQeo="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0-sources.jar"
+      ],
+      "hash": "sha256-R2VltYr4tZzUEyUAPx/D+3kRFsUJdll08Es76KEhuxA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.jar",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.jar"
+      ],
       "hash": "sha256-XjQypEZKQyq/2rc75xQuUW0lqEqoQm/OEZL/sFMvqjU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.module",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.module"
+      ],
       "hash": "sha256-F03No+hAImE4rbjOkENXbdxDwoa2EtPb9kUx9nvY2Yc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.pom",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/io/opentelemetry/opentelemetry-context/1.41.0/opentelemetry-context-1.41.0.pom"
+      ],
       "hash": "sha256-yzs5YlmYNClZTWLkdmdcwAuyUskNMU1keptW3sI+VSY="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-javadoc.jar"
+      ],
+      "hash": "sha256-1YyiFlzGYyZBNqF7bWtSV+/Ph8wdFJpP97F9nbH4DuY="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-sources.jar"
+      ],
+      "hash": "sha256-J3p6QxVBKBe+tmVbMk3HJ2Yh6V6/8AuL9l4XontoXi0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+      ],
       "hash": "sha256-tQlEisUG1gcxnxglN/CzXXEAdYLsdBgyofER5bW3Czg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module"
+      ],
       "hash": "sha256-4IAoExN1s1fR0oc06aT7QhbahLJAZByz7358fWKCI/w="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom"
+      ],
       "hash": "sha256-MjVQgdEJCVw9XTdNWkO09MG3XVSemD71ByPidy5TAqA="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80-javadoc.jar"
+      ],
+      "hash": "sha256-VA5YUyV75866cHVkhJG5SOZvfQWzzqJPrHsyQ9mdPRA="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80-sources.jar"
+      ],
+      "hash": "sha256-AdfWjacO9TqLLN+c/wqBWEq48ZXELd/gbJd1fI64GdM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80.jar",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80.jar"
+      ],
       "hash": "sha256-N5mg1TURuGB4CvQ8RK6OBRmvq7JjGVr0AXT0YxLNWL0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80.pom",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpg-jdk18on/1.80/bcpg-jdk18on-1.80.pom"
+      ],
       "hash": "sha256-B6JGwq2vtih4OhroSsGNTfQCXfBq42NN/pOHq5T56nQ="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80-javadoc.jar"
+      ],
+      "hash": "sha256-Ejg5aHjzAy5G3iK5Mj6ClokalGagZ0i9kMon3AVV2/M="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80-sources.jar"
+      ],
+      "hash": "sha256-YB7CvrR0nwvmXiloEbbmPeVn+Q0STyaIeHW7ci/YfnE="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80.jar",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80.jar"
+      ],
       "hash": "sha256-T0umqSYX6hncGD8PpdtJLu5Cb93ioKLWyUd3/9GvZBM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80.pom",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcpkix-jdk18on/1.80/bcpkix-jdk18on-1.80.pom"
+      ],
       "hash": "sha256-pKEiETRntyjhjyb7DP1X8LGg18SlO4Zxis5wv4uG7Uc="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2-javadoc.jar"
+      ],
+      "hash": "sha256-5xf07JsG9L4EI4Mph4hUNQoc4iSF7hh5pZgUSAmsqis="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2-sources.jar"
+      ],
+      "hash": "sha256-lhgVoRdd+zm1UqlOkOOxyA8RcFvqmsjYU8Ug9tsWysA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2.jar",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2.jar"
+      ],
       "hash": "sha256-szIn8H3OJk2vGqwueY7xCaSQHzGr7axTY1dG3ZNnnTs="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcprov-jdk18on/1.80.2/bcprov-jdk18on-1.80.2.pom"
+      ],
       "hash": "sha256-EqUFpxejvHZH99jt6ndzLJxty1PE32Kju1i3pUIooo8="
     },
     {
@@ -1057,15 +1267,35 @@
       "contents": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>org.bouncycastle</groupId>\n  <artifactId>bcprov-jdk18on</artifactId>\n  <versioning>\n    <latest>1.86</latest>\n    <release>1.86</release>\n    <versions>\n      <version>1.71</version>\n      <version>1.71.1</version>\n      <version>1.72</version>\n      <version>1.73</version>\n      <version>1.74</version>\n      <version>1.75</version>\n      <version>1.76</version>\n      <version>1.77</version>\n      <version>1.78</version>\n      <version>1.78.1</version>\n      <version>1.79</version>\n      <version>1.80</version>\n      <version>1.80.2</version>\n      <version>1.81</version>\n      <version>1.81.1</version>\n      <version>1.82</version>\n      <version>1.83</version>\n      <version>1.84</version>\n      <version>1.85</version>\n      <version>1.85.2</version>\n      <version>1.86</version>\n    </versions>\n    <lastUpdated>20260911045244</lastUpdated>\n  </versioning>\n</metadata>\n"
     },
     {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2-javadoc.jar"
+      ],
+      "hash": "sha256-pm+FIoMXMb+pXHRl2Sf88LMM+lIVcSLGxEvR5JZVlmI="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2-sources.jar"
+      ],
+      "hash": "sha256-8eQwVegofN5VandBvxa3/XiWuPVyq5HgytszfnELAV8="
+    },
+    {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2.jar",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2.jar"
+      ],
       "hash": "sha256-vHjTLX/7FB7ifk+3ffBCWdhCyJnn6Or5EvmQ1yU707Q="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/bouncycastle/bcutil-jdk18on/1.80.2/bcutil-jdk18on-1.80.2.pom"
+      ],
       "hash": "sha256-Joi+GvSZ1SUJYRTML1HHp6TKI8PScxe3HhjByWvsA9E="
     },
     {
@@ -1073,615 +1303,1515 @@
       "contents": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>org.bouncycastle</groupId>\n  <artifactId>bcutil-jdk18on</artifactId>\n  <versioning>\n    <latest>1.86</latest>\n    <release>1.86</release>\n    <versions>\n      <version>1.71</version>\n      <version>1.71.1</version>\n      <version>1.72</version>\n      <version>1.73</version>\n      <version>1.74</version>\n      <version>1.75</version>\n      <version>1.76</version>\n      <version>1.77</version>\n      <version>1.78</version>\n      <version>1.78.1</version>\n      <version>1.79</version>\n      <version>1.80</version>\n      <version>1.80.2</version>\n      <version>1.81</version>\n      <version>1.81.1</version>\n      <version>1.82</version>\n      <version>1.83</version>\n      <version>1.84</version>\n      <version>1.85</version>\n      <version>1.86</version>\n    </versions>\n    <lastUpdated>20260911045245</lastUpdated>\n  </versioning>\n</metadata>\n"
     },
     {
+      "path": "https/repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0-javadoc.jar"
+      ],
+      "hash": "sha256-NlbVheULmin000iQJFxaROxA+/eVphaS+/UOsenRXhg="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0-sources.jar"
+      ],
+      "hash": "sha256-1r3uWJZM0Fqr/KTkSUfTy9raa/YX7WGLYrOw1aId4zk="
+    },
+    {
       "path": "https/repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar"
+      ],
       "hash": "sha256-P7wumPBYVMPfFt+auqlVuRsVs+ysM2IyCO1kJGQO8PY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.module",
       "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.module"
+      ],
       "hash": "sha256-+BYzJyRauGJVMpSMcqkwVIzZfzTWw/6GD6auxaNNebQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.pom"
+      ],
       "hash": "sha256-kxO/U7Pv2KrKJm7qi5bjB5drZcCxZRDMbwIxn7rr7UM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/13.0/annotations-13.0-javadoc.jar"
+      ],
+      "hash": "sha256-GJ1tdyayk4aa6XvDW9qyNPRuc1VJUWl0JgVDzibfHUc="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/13.0/annotations-13.0-sources.jar"
+      ],
+      "hash": "sha256-QqXhRLjoHVDWkT0QB7aV5i5hRwUmjYz58T29xHjCxo4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar"
+      ],
       "hash": "sha256-rOKhDcji1f00kl7KwD5JiLLA+FFlDJS4zvSbob0RFHg="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar.sha1"
+      ],
+      "hash": "sha256-lT9IJY+OVRUhk+6R4VFkxM6g9CAZHrGefgYwQNALlvU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom"
+      ],
       "hash": "sha256-llrrK+3/NpgZvd4b96CzuJuCR91pyIuGN112Fju4w5c="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom.sha1"
+      ],
+      "hash": "sha256-65RIpiUXnzCQ7EQFR8ca7PBeLiQTDAQXjXsgU/ym+5c="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0-javadoc.jar"
+      ],
+      "hash": "sha256-YxA408Iy5l8PQniFw5ep6hOjaLLmeidI1vh0eBy4hKI="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0-sources.jar"
+      ],
+      "hash": "sha256-/yMJtC91hFIEl7tIvGCaygTJiGz0hwjxS+g/AEI+wUQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar"
+      ],
       "hash": "sha256-ew8ZckCCy/y8ZuWr6iubySzwih6hHhkZM+1DgB6zzQU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.pom"
+      ],
       "hash": "sha256-yUkPZVEyMo3yz7z990P1P8ORbWwdEENxdabKbjpndxw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-FnvZg7qHIRwn1jH3r8aM/7m0Ta1fOqwASXwwkJ2DEkc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.jar"
+      ],
       "hash": "sha256-8chm6sXcCI8/0IEQCENAm/TxYSu7mY+6ofaFMlyuDVU="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.jar.sha1"
+      ],
+      "hash": "sha256-Vt2nq2mIR7IPCnhLNS+Fp7ov2zL0oQFfg0WzJZZ39rw="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.pom"
+      ],
       "hash": "sha256-HOL7NczYP8vJCuXFmN/bsilS0IVHgElEpbIfLEbKwL0="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools-api/2.2.20/abi-tools-api-2.2.20.pom.sha1"
+      ],
+      "hash": "sha256-9qunnG34Yr5yK740JaEDUprqJ6weiwXZHjK1QCKBrPQ="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-m5N+K8rut5Bc792BGgvs6KfDaX4XyGfEqxGSFSkzdlE="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20.jar"
+      ],
       "hash": "sha256-paY3q4IXBJkc9wYWtk4CuaT4IMggGfk8DSbwzfsiZjM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/abi-tools/2.2.20/abi-tools-2.2.20.pom"
+      ],
       "hash": "sha256-ffGAKEU136pgq3jo5pNEiC5c3Np9clU1sRDgOu6MWFA="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-dOxtQ2ag8pqlSEg9JN07SZf4ahssMuPcJCSPcDt5G60="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.jar"
+      ],
       "hash": "sha256-/ZlHs6F2Iahvq9lTr4fzS9K7f4sm2uksHte+dHL0TDs="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.jar.sha1"
+      ],
+      "hash": "sha256-DCg9PA2m+C8/Qp7qFV9uDkxX7qR/dp6BY0eYKqGryn8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.pom"
+      ],
       "hash": "sha256-AtR9SHfsMktJbZMTMkXNTTSLZSMDzyfvpj44ry+zzyo="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.2.20/kotlin-build-tools-api-2.2.20.pom.sha1"
+      ],
+      "hash": "sha256-QM952D0ZJQqkVFY4cC/pSbnvsJqVhdxrvd++JhlOuZM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-Y2YxDBJoJRHLCEdP1u89PfAR9IJVrjE/iEVpPwSYDo8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20.jar"
+      ],
       "hash": "sha256-ZHiafwBWWSfy8/LRCfIwV009kwjtXW6Gv8qEPaZIfPc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-build-tools-impl/2.2.20/kotlin-build-tools-impl-2.2.20.pom"
+      ],
       "hash": "sha256-4vQ157rwHeL/kNCoc3r4+b+X/BUuWVuGp2C6ZOjmnfY="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-ePw1xgNSo+G/md2nrQ+Ep/hWs7L9f++Jud7kYUFiAyg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20.jar"
+      ],
       "hash": "sha256-HGw/gQv+akGry8NLOi72OfHj9K7tOpU6Swl07qT0GIk="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.20/kotlin-compiler-embeddable-2.2.20.pom"
+      ],
       "hash": "sha256-Bf8CX3+wky+xH6HhzK71KPdgJ9lWaA+INdQ4VCdi4go="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-YSAM/k+26U716C1G9Ecf2xDXlpLiNHtdYfFXxJk4Wrs="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.jar"
+      ],
       "hash": "sha256-+vloNPogBNeL2ORCD1go3j1CckJ9ZHR5gCTqbpz4XN0="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.jar.sha1"
+      ],
+      "hash": "sha256-ZEYfxOlzQsqDdGXSAgK1qxDCenz9RB4rh3bp8lz6gDA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.pom"
+      ],
       "hash": "sha256-kbsVJI9OqUS2Mw8xA/HrVF0TvditSuxDe3R6WG57F6k="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-compiler-runner/2.2.20/kotlin-compiler-runner-2.2.20.pom.sha1"
+      ],
+      "hash": "sha256-L1I0ErZdsXFsHQEQXZnjtSAiVwMgQiO79mG8d60uP9A="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-9dX0VsKzfHN437l7YwMGNRefkqosq4zXs2AZN9aKIuI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.jar"
+      ],
       "hash": "sha256-cO983NwwEHe5s7ohqp6cVadq+z/73+9KtWKmd9GN+kw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.jar.sha1"
+      ],
+      "hash": "sha256-9Fdh8PO/O2zNR6vtobBjTOwlFzcM2Ng/bBD+2o9wdv8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.pom"
+      ],
       "hash": "sha256-ihNtDxPrmDpr40/x4WPJznmFXkuiF09Fy0KqpnVT91Q="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.2.20/kotlin-daemon-client-2.2.20.pom.sha1"
+      ],
+      "hash": "sha256-+fV5pPGhAtby3nFJshJissNlAbnmRESqs8VxlVirtio="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-vrNON1xXwf9gaFk4XgB1HBaE+dX3WitetIAM6gGto0g="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20.jar"
+      ],
       "hash": "sha256-fFyM0vi+rdMoMjm7nKIZoMr6GvAmgrQHsYHhF5cY8vc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-daemon-embeddable/2.2.20/kotlin-daemon-embeddable-2.2.20.pom"
+      ],
       "hash": "sha256-9Yhmv7yYZ8bWR1ec/3DUKHeZctvd2N5MJXh5y0N0FIk="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20.jar"
+      ],
       "hash": "sha256-XeE7Sb8dRBCZFep1tjiWZpNpXfQM1bIebhKu62fcKSQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-klib-commonizer-embeddable/2.2.20/kotlin-klib-commonizer-embeddable-2.2.20.pom"
+      ],
       "hash": "sha256-ZPn6nRljGcOOL66C6dzpm5q3nxo6SSv9BOoc0GxKhWY="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-xVvQ0E5teW19LPBxEoGYnV4Gt97wcQD4BkC5iuHrt4g="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20.jar"
+      ],
       "hash": "sha256-hSTqyQ9+jg8TZog/LGyCDJO/ph3z12hXyNPoA89nMV0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.2.20/kotlin-metadata-jvm-2.2.20.pom"
+      ],
       "hash": "sha256-e2qAtqLSZ2oEIvaWg4EyMVQlUfYbMgxochz7nh9ZCdA="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10-javadoc.jar"
+      ],
+      "hash": "sha256-aeGmLldSyj9D+xYH8WE3m76Itkr4nBpUPBJhYK33zFM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10-sources.jar"
+      ],
+      "hash": "sha256-OSQt0UkknGbt2nqpgilH5irv9hlDJgOdTotdUo218AY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar"
+      ],
       "hash": "sha256-MnesECrheq0QpVq+x1/1aWyNEJeQOWQ0tJbnUIeFQgM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar.sha1"
+      ],
+      "hash": "sha256-Lso3AFpQTciY1/czIzanHmuxK6vYjDAaUYJiv5nfN1w="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.pom"
+      ],
       "hash": "sha256-V5BVJCdKAK4CiqzMJyg/a8WSWpNKBGwcxdBsjuTW1ak="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.pom.sha1"
+      ],
+      "hash": "sha256-d3qiE55dkyEy3PwJc/pRI98DblYYQcGVVfdUSFt1H+U="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-2da0Fr8SZ9XZov/7MJyNAvpwdggVTXsNfdMY0t19qpY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20.jar"
+      ],
       "hash": "sha256-XIvV3Xrh6i7rJ3j9vqoZpWIYSXX2yrigu2d55BkHMa4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-script-runtime/2.2.20/kotlin-script-runtime-2.2.20.pom"
+      ],
       "hash": "sha256-IpOhQenagKfpjYXtKkkuldsMAWW86rC3Klzp4tkrCAc="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-811uMhM1P9ShFZhuVv4iLbrdq1ZRDGyWsr0tm9XhMN4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20.jar"
+      ],
       "hash": "sha256-+5n/fwzZUtpo1UjT89ZErlB4sLlvybrwZewUZqKTuAU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-common/2.2.20/kotlin-scripting-common-2.2.20.pom"
+      ],
       "hash": "sha256-iTjGIFKXW7uW3OotqaeNS2sk2vLwnTWMGnqEHxaMtzo="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-qKil7JGcq8jAqOajblHRyYACoWuOD+/nTunKWCV4VcI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20.jar"
+      ],
       "hash": "sha256-2GJhDAAzQuUIjKIcRAQix9ijcA4ZnWA/ehAnjESIR2E="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-embeddable/2.2.20/kotlin-scripting-compiler-embeddable-2.2.20.pom"
+      ],
       "hash": "sha256-PW9vFZH6P3r14jFlxowu4BclFYZFQ09eMBdF5kfHVhE="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-/yFLrm/2/C1Fyg6Mutoh49/cK+YnG3/8HjJgRiQFtHY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20.jar"
+      ],
       "hash": "sha256-e3kSNZL//r81xhag/xBDMscc3mN6ZX4JrbXfbD+cA84="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-compiler-impl-embeddable/2.2.20/kotlin-scripting-compiler-impl-embeddable-2.2.20.pom"
+      ],
       "hash": "sha256-+l+wJ+4qSbPb/zh3VBtC+3CuzMN7oC4dOthipcZyVLc="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-KmR+b3CdoXkhkrJkxXQrlRR9gofTNU5hoCC09xVAjAw="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20.jar"
+      ],
       "hash": "sha256-qR+5BJY0oyum09LpGgy5mD4KpOccDC4bKDg4qOBhYx8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-scripting-jvm/2.2.20/kotlin-scripting-jvm-2.2.20.pom"
+      ],
       "hash": "sha256-0df8RWSBne6v6OvdcfbyGBf/xVjr0U9HpW6NyTaW3Rk="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.2.20/kotlin-stdlib-common-2.2.20.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.2.20/kotlin-stdlib-common-2.2.20.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.2.20/kotlin-stdlib-common-2.2.20.module"
+      ],
       "hash": "sha256-ND2ZRn/LRNPvsSorpwNmTKQ/Oj8m//k8jTGyJoOttX4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.2.20/kotlin-stdlib-common-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.2.20/kotlin-stdlib-common-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.2.20/kotlin-stdlib-common-2.2.20.pom"
+      ],
       "hash": "sha256-/Xicsy4kEOzGg7hzn3t1AD0J2jMzDD+KZcJp22svbHU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-all.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-all.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-all.jar"
+      ],
       "hash": "sha256-VVzbTIhKWEwbXVn2lvt2zWYJF/qza4roAyvNYsdQ7+U="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-J7m4Zy7zOunDRbPlfTm3BVYOfsqcor9khfMj9hInbCY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.jar"
+      ],
       "hash": "sha256-iDbM/9NYX63amQEkSyDUKQHS881YEFjYQ04v+rzzo+c="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.module"
+      ],
       "hash": "sha256-yRj1IU0CGnLjdn8nVul9EDpSbgTxQj2jZj79+1hH25U="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.pom"
+      ],
       "hash": "sha256-SosIbmQxvPYjY39Ssv8ZLhrbkTg4dC5cDupwqN7kKcQ="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-iRxW2Bg9LNPpEs8lCt7KiJ26UdArB/zjAVMh4I9ytKI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.jar"
+      ],
       "hash": "sha256-Z33LtoGzPrXfVI8WFx/O3zchQwKostdzGjfTDNxqIK8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.module"
+      ],
       "hash": "sha256-cceIFR+bPxBhJhTyd3kbEOeh4KZzUZoRBSYU44lL1PU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test-junit5/2.2.20/kotlin-test-junit5-2.2.20.pom"
+      ],
       "hash": "sha256-wV8BOn43L6n7nUturimUpV5ASnci5IkeZ7KUGYf/OAc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-all.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-all.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-all.jar"
+      ],
       "hash": "sha256-toH6GStsYrA8abCnP4HesdryGRz8DOiSVESTL1SNOLQ="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-yERVRQMsLgkZX8iDsnQmDdQUsz8s3B2t1PNEHBpORWs="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.jar"
+      ],
       "hash": "sha256-AFTFHGclEqkYRAcD416pRqjnohCHLyGW29a58pWRmLA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.module"
+      ],
       "hash": "sha256-dQR1Cbqx5P9JGhzfT5zxe1FpBT4m3ZN4C92Z4Pq8um0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/kotlin-test/2.2.20/kotlin-test-2.2.20.pom"
+      ],
       "hash": "sha256-zmZUimH26/K3dUksDXaPl/RwJIoeGhdijxrMz/L80tw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20-javadoc.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20-sources.jar"
+      ],
+      "hash": "sha256-xt6tovrFO46mUj29p3WXsSgAZnRhbxQPBN8jJkxtGqM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20.jar"
+      ],
       "hash": "sha256-xAgKy0UComoaKdjxcbLjBIJKoiDCrtSvQEOHfy8tREg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlin/swift-export-embeddable/2.2.20/swift-export-embeddable-2.2.20.pom"
+      ],
       "hash": "sha256-CiNVWKEHhN+VqqVTXkFEpscfSfpqCqGOL8sBKbaLG3Y="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1-sources.jar"
+      ],
+      "hash": "sha256-sMNGbBg00vA0bwloovITlC+oJab21cSCxOHAacRE3ds="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.jar"
+      ],
       "hash": "sha256-fbhmDr5LkbtHjts2FsTjpQulnAfcpRfR4ShMA/6GrFc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.module"
+      ],
       "hash": "sha256-Pokf5ja1UQgZIQD884saObzRwlM+I8Ri/AdkTur8sg8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/atomicfu/0.23.1/atomicfu-0.23.1.pom"
+      ],
       "hash": "sha256-aIt5ABn0F87APmldZWexc7o7skGJVBZi8U/2ZEG1Pas="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.10.2/kotlinx-coroutines-bom-1.10.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.10.2/kotlinx-coroutines-bom-1.10.2.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.10.2/kotlinx-coroutines-bom-1.10.2.pom"
+      ],
       "hash": "sha256-+vDGU45T3cBJmmNmTY52PCFlgLLhjnIsy98bQxpq/iY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.0/kotlinx-coroutines-bom-1.8.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.0/kotlinx-coroutines-bom-1.8.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.0/kotlinx-coroutines-bom-1.8.0.pom"
+      ],
       "hash": "sha256-Ejnp2+E5fNWXE0KVayURvDrOe2QYQuQ3KgiNz6i5rVU="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.0/kotlinx-coroutines-bom-1.8.0.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.0/kotlinx-coroutines-bom-1.8.0.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.8.0/kotlinx-coroutines-bom-1.8.0.pom.sha1"
+      ],
+      "hash": "sha256-9z649yaS7gc4ztic7SRFfAPoVdiCknUg3QcMjxms9KM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2-javadoc.jar"
+      ],
+      "hash": "sha256-FaL9xR/LVEMtKbXPnYnnO6mXZqQXhBYj17yMrcwM6D0="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2-sources.jar"
+      ],
+      "hash": "sha256-zYbpY1zHrBt9mFTtWJ4wQfsRzGfSJz59MSJ4ulYo4sg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.jar"
+      ],
       "hash": "sha256-XKF1s43zMf1kFVs1zYyuElH6nuNpcJs21C4KKIzM4/0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.module"
+      ],
       "hash": "sha256-6eSnS02/4PXr7tiNSfNUbD7DCJQZsg5SUEAxNcLGTFM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.10.2/kotlinx-coroutines-core-jvm-1.10.2.pom"
+      ],
       "hash": "sha256-ZY9Xa5bIMuc4JAatsZfWTY4ul94Q6W36NwDez6KmDe8="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0-javadoc.jar"
+      ],
+      "hash": "sha256-QdqIItLweZo+m7ygiVnTraboykD7vTnJsg4V0QY2wtE="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0-sources.jar"
+      ],
+      "hash": "sha256-RRWZ/yBE5qmPl1so0QaJHMZkrmmtejDFct/7VBMgIXk="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar"
+      ],
       "hash": "sha256-mGCQahk3SQv187BtLw4Q70UeZblbJp8i2vaKPR9QZcU="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar.sha1"
+      ],
+      "hash": "sha256-Rnx9BUTvJTjAXKMjvL2hN2IE+rJTXYtmBDZmiLspOKU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.module"
+      ],
       "hash": "sha256-/2oi2kAECTh1HbCuIRd+dlF9vxJqdnlvVCZye/dsEig="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.module.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.module.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.module.sha1"
+      ],
+      "hash": "sha256-LPMUptx7KyuYlgOBBlUjFZijO+I2ZyD2O82/zY2K/4M="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.pom"
+      ],
       "hash": "sha256-pWM6vVNGfOuRYi2B8umCCAh3FF4LduG3V4hxVDSIXQs="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.pom.sha1",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.pom.sha1",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.pom.sha1"
+      ],
+      "hash": "sha256-ORvwAt/WFtxZsgnPhbBHi7XKJWjKO7AXu+MjlpniywE="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2-sources.jar"
+      ],
+      "hash": "sha256-gXi7ImZbeNCLyLX4ZKirlGV20Q/jUsd1WNycjtf4Ktc="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.jar"
+      ],
       "hash": "sha256-MZtlMAnUnHCYL5jfKcyE/HAlsJLLBXHI51MuOtQ2ba4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.module"
+      ],
       "hash": "sha256-j+JUF35xGnzRijwG2CQvzpRfQcLMoT3BmzOuQqVDUBY="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.10.2/kotlinx-coroutines-core-1.10.2.pom"
+      ],
       "hash": "sha256-UZ2lQACW80YqTa6AeDrQUEE9S8gex65T+udq7wzL7Uw="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-bom/1.7.3/kotlinx-serialization-bom-1.7.3.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-bom/1.7.3/kotlinx-serialization-bom-1.7.3.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-bom/1.7.3/kotlinx-serialization-bom-1.7.3.pom"
+      ],
       "hash": "sha256-QiakkcW1nOkJ9ztlqpiUQZHI3Kw4JWN8a+EGnmtYmkY="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3-javadoc.jar"
+      ],
+      "hash": "sha256-CYui8u9rnHYSx7qUAjlk1nerAOkRGWPjU9lrkbfsIXo="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3-sources.jar"
+      ],
+      "hash": "sha256-0ITOm/EwkZ1LiZ2wmJZTFEDR4zCRkYfHky1/4PpSV7g="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.jar",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.jar"
+      ],
       "hash": "sha256-8K3eRYZBREdThc9Kp+C3/rJ/Yfz5RyZl7ZjMlxsGses="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.module"
+      ],
       "hash": "sha256-c7tMAnk/h8Ke9kvqS6AlgHb01Mlj/NpjPRJI7yS0tO8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.7.3/kotlinx-serialization-core-jvm-1.7.3.pom"
+      ],
       "hash": "sha256-c09fdJII3QvvPZjKpZTPkiKv3w/uW2hDNHqP5k4kBCc="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3-sources.jar"
+      ],
+      "hash": "sha256-xBPCvuPYJI27rutgxBdrDZVDla/69viWGzYsWqRm16g="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3.module",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3.module"
+      ],
       "hash": "sha256-OdCabgLfKzJVhECmTGKPnGBfroxPYJAyF5gzTIIXfmQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3.pom",
       "url": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core/1.7.3/kotlinx-serialization-core-1.7.3.pom"
+      ],
       "hash": "sha256-MdERd2ua93fKFnED8tYfvuqjLa5t1mNZBrdtgni6VzA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.module"
+      ],
       "hash": "sha256-IbCvz//i7LN3D16wCuehn+rulOdx+jkYFzhQ2ueAZ7c="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.10.1/junit-bom-5.10.1.pom"
+      ],
       "hash": "sha256-IcSwKG9LIAaVd/9LIJeKhcEArIpGtvHIZy+6qzN7w/I="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.module"
+      ],
       "hash": "sha256-qaTye+lOmbnVcBYtJGqA9obSd9XTGutUgQR89R2vRuQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.pom"
+      ],
       "hash": "sha256-GdS3R7IEgFMltjNFUylvmGViJ3pKwcteWTpeTE9eQRU="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1-javadoc.jar"
+      ],
+      "hash": "sha256-uW1l4HBQIHXLcUR32RfDJwixwX5ukPBLYoMia1pA97U="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1-sources.jar"
+      ],
+      "hash": "sha256-VR4FTC6Et50IfwQQyObj3T6DrlQSlZM4DUhVDaRBte8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar"
+      ],
       "hash": "sha256-YNXDmMMtxwObmSglFK1gZAYdhBfPlZofa9IDjMkHyRM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.module"
+      ],
       "hash": "sha256-+H9zEVSfSf4k5igqEWXpB+AXqR6XnK2r/fm/VMP3EG8="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.pom"
+      ],
       "hash": "sha256-PK9ZSxPa5xB1EN2Zj02en6J3MFzcohMh/dWRmdyHzz0="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-javadoc.jar"
+      ],
+      "hash": "sha256-YWAUw/yOdi/TisorI+T4htYs6WrLlWVkvDXDqhPPGc0="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-sources.jar"
+      ],
+      "hash": "sha256-X1RjlXK8r8OTdU8M6JZ3GSlHwB/+JgCll7YLWbxDfzs="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar"
+      ],
       "hash": "sha256-q4PvnlGsRZfVnSa0tYgSEpVQ4vV5pATIr30J9c5bQpM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.module"
+      ],
       "hash": "sha256-puov77OqWGj9engK4doRYudt2jdgtIAVwqQZ0jcv88s="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.pom"
+      ],
       "hash": "sha256-US0j/znHZmWho2RVJiMLz4ib1JiEME9/6+BHsBjuszk="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-javadoc.jar"
+      ],
+      "hash": "sha256-UiJtfsXcd4oHycOZPlblO7xvdYeBpp8u0K4gkFFD5p8="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-sources.jar"
+      ],
+      "hash": "sha256-sjQ0Uc9/nNAES0phStyh3YjzqSZSVsiKSm87aOZQdcg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar"
+      ],
       "hash": "sha256-zfisWfP613TKc4rQOJCVDuuRgz7w6JCHUxd+3SbxWBw="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.module"
+      ],
       "hash": "sha256-25EWOorwBaMnmFZd1nU3clGJWQ3qttoDsx292kVoahg="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.pom"
+      ],
       "hash": "sha256-sKMjsNA0REQdE9RjC0DbXvhBYNLC9YXU1kbcOIL5kgc="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1-javadoc.jar"
+      ],
+      "hash": "sha256-OSnZourK8/ceKQI46u40TZqgJmjYbjL61XZVmzk2wfw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1-sources.jar"
+      ],
+      "hash": "sha256-iuhnzGS19ru3PneG4Kwqad328eRg4IJ0/u+EskkDblM="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar"
+      ],
       "hash": "sha256-fZhV7j8/cfAV6xR5VZv5I3gyQ8JPv72LKb7Y6AmbVnI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.module"
+      ],
       "hash": "sha256-VtNwYvzicEHwtaNfOTxoyK0jr+NLLTDvjgewT8EZ1N0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.pom"
+      ],
       "hash": "sha256-Su81pl6VGRWhPZ920fr/CaeMND5SJC+vNSBDtwx/bzA="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-javadoc.jar"
+      ],
+      "hash": "sha256-AMYI1YV8OWuMxVwM0uK55RONwXdxZ0tvtO00HCYugZA="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-sources.jar"
+      ],
+      "hash": "sha256-ovDFYqf+QGYETZO7IM5Se0Zpwd2u/KIkSlM1bbdHxeI="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar"
+      ],
       "hash": "sha256-nt2Wmw0GcMVBBbyRrnm9HG9QPhIRX6uoIHO4TIa7wzQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.module"
+      ],
       "hash": "sha256-C54mJcj0aLPNQTLMCoBfif5B+FLRrf/3Xz6xRlyhy2s="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.pom"
+      ],
       "hash": "sha256-zRLSt8JC8WVUjtnJQGFg3O22CAkltHz3MeD9rl+0vOI="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-javadoc.jar"
+      ],
+      "hash": "sha256-decGaeUw4d0l1fbevW/J2WKk/J6sG9wFeZy0m4jXmR8="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-sources.jar"
+      ],
+      "hash": "sha256-lqzHvFM/UkIaFJ+v8uPp1pWNFn9CANp0gVsgj5hGphU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar"
+      ],
       "hash": "sha256-sd2Zj2T5rK3BWWbZzT0IB0ZiZ3s+OQ8KOPy/C7THIzA="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.module"
+      ],
       "hash": "sha256-v2zh+1lR3Gx942re72rq9474LWODHFzOvOOI2p/F/iU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.pom"
+      ],
       "hash": "sha256-lDRxV5mEIS++adA+3sfC/0+6sYiL4LgMJl6nCGn9ir0="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-javadoc.jar"
+      ],
+      "hash": "sha256-kT3Sq9vCt8G/VHYZ18UKxgh8a01ojwrztYoN+xGpVyw="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-sources.jar"
+      ],
+      "hash": "sha256-5WDl57xu7RhHdPdaeza4JOIOyBi+S5kSE8DTGv9CYMU="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.jar"
+      ],
       "hash": "sha256-10ML0Cnn/M7VPuRF5NLRqKHgQ+pMTfQ7YzWoV/eXYa4="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.module"
+      ],
       "hash": "sha256-YMRTMgm6WHsc2n1ywIfzUaMjH5uRyU8/djlLDiI0HMQ="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.pom"
+      ],
       "hash": "sha256-tnzVOALgaqgqpZZumftCkX0iBFeEnlwIDINgdT7WfDE="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-javadoc.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-javadoc.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-javadoc.jar"
+      ],
+      "hash": "sha256-gRgCSe2jBUy8/4O1LQ6ZMC0EnPtswchVUOLEmLKpEiM="
+    },
+    {
+      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-sources.jar",
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-sources.jar"
+      ],
+      "hash": "sha256-ckok46aCZ9XrrJQROJoVY4px5QxiRI/6WPWcNNXB67I="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+      ],
       "hash": "sha256-SOLfY2yrZWPO1k3N/4q7I1VifLI27wvzdZhoLd90Lxs="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module"
+      ],
       "hash": "sha256-SL8dbItdyU90ZSvReQD2VN63FDUCSM9ej8onuQkMjg0="
     },
     {
       "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom",
-      "mirrors": [],
+      "mirrors": [
+        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom"
+      ],
       "hash": "sha256-m/fP/EEPPoNywlIleN+cpW2dQ72TfjCUhwbCMqlDs1U="
     },
     {

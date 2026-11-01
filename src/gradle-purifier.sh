@@ -82,14 +82,14 @@ nixpkgs_jdk() {
   printf '%s/lib/openjdk' "$out"
 }
 
-# The JDK to run Gradle on: JAVA_HOME when it is set; otherwise nixpkgs'
-# JDK of the major version $1 when it is given, and the command's own JDK
+# The JDK to run Gradle on: nixpkgs' JDK of the major version $1 when it
+# is given; otherwise JAVA_HOME when it is set, and the command's own JDK
 # when it is not.
 java_home() {
-  if [ -n "${JAVA_HOME:-}" ]; then
-    echo "$JAVA_HOME"
-  elif [ -n "${1:-}" ]; then
+  if [ -n "${1:-}" ]; then
     nixpkgs_jdk "$1"
+  elif [ -n "${JAVA_HOME:-}" ]; then
+    echo "$JAVA_HOME"
   else
     echo "$default_java"
   fi
@@ -338,10 +338,13 @@ lock_command() {
   [ -f "$work/output/projects.json" ] || die "the lock build wrote no projects.json"
   local args_json
   args_json=$(jq -n '$ARGS.positional' --args -- "${gradle_args[@]}")
+  # A large build locks more than fits in one argument, so the artifacts
+  # go to jq as a file.
+  artifacts_json "$records" >"$work/artifacts.json"
   jq -n \
     --argjson version "$lock_version" \
     --slurpfile described "$work/output/projects.json" \
-    --argjson artifacts "$(artifacts_json "$records")" \
+    --slurpfile artifacts "$work/artifacts.json" \
     --rawfile konanDependencies "$work/konan-dependencies" \
     --arg konanHost "$(konan_host)" \
     --arg distribution "$(tree_path "$url")" \
@@ -357,7 +360,7 @@ lock_command() {
       projects: $described[0].projects,
       konanDependencies: ($konanDependencies | split("\n") | map(select(length > 0)) | unique),
       konanHost: $konanHost,
-      artifacts: $artifacts
+      artifacts: $artifacts[0]
     }' >"$root/$lockfile.tmp"
   mv "$root/$lockfile.tmp" "$root/$lockfile"
   echo "gradle-purifier: wrote $lockfile ($(jq '.artifacts | length' "$root/$lockfile") downloads)" >&2

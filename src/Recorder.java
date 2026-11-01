@@ -99,7 +99,8 @@ public final class Recorder {
 
     HttpClient.Builder builder =
         HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NORMAL)
+            // get() follows redirects itself.
+            .followRedirects(HttpClient.Redirect.NEVER)
             .connectTimeout(Duration.ofSeconds(30));
     URI proxy = proxyFromEnvironment();
     if (proxy != null) {
@@ -341,20 +342,19 @@ public final class Recorder {
     // another repository, and reuses that file when they match. The lock
     // must hold the file at this repository's path as well, or the
     // sandboxed build, which reads only this path, does not find it.
-    HttpRequest.Builder request =
-        HttpRequest.newBuilder(source(remote)).timeout(Duration.ofMinutes(10)).GET();
+    java.util.Map<String, List<String>> headers = new java.util.HashMap<>();
     exchange
         .getRequestHeaders()
         .forEach(
             (name, values) -> {
               if (FORWARDED_REQUEST_HEADERS.contains(name.toLowerCase())) {
-                values.forEach(v -> request.header(name, v));
+                headers.put(name, values);
               }
             });
 
     HttpResponse<InputStream> response;
     try {
-      response = client.send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
+      response = get(remote, headers);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       exchange.sendResponseHeaders(502, -1);
@@ -409,12 +409,34 @@ public final class Recorder {
     return null;
   }
 
+  /**
+   * GETs `remote` from where the recorder fetches it, following redirects itself: a redirect to
+   * Maven Central goes to its mirror too, when the recorder fetches from mirrors (the plugin
+   * portal redirects many of its files to Maven Central).
+   */
+  private HttpResponse<InputStream> get(URI remote, java.util.Map<String, List<String>> headers)
+      throws IOException, InterruptedException {
+    URI target = source(remote);
+    for (int redirects = 0; ; redirects++) {
+      HttpRequest.Builder request =
+          HttpRequest.newBuilder(target).timeout(Duration.ofMinutes(10)).GET();
+      headers.forEach((name, values) -> values.forEach(v -> request.header(name, v)));
+      HttpResponse<InputStream> response =
+          client.send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
+      int status = response.statusCode();
+      java.util.Optional<String> location = response.headers().firstValue("Location");
+      if (status < 300 || status >= 400 || status == 304 || location.isEmpty() || redirects >= 10) {
+        return response;
+      }
+      response.body().close();
+      target = source(target.resolve(location.get()));
+    }
+  }
+
   /** Fetches `remote` and records it when the remote answers with 200. */
   private void recordFetched(URI remote) throws IOException {
-    HttpRequest request =
-        HttpRequest.newBuilder(source(remote)).timeout(Duration.ofMinutes(10)).GET().build();
     try {
-      HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+      HttpResponse<InputStream> response = get(remote, java.util.Map.of());
       MessageDigest sha256 = sha256();
       ByteArrayOutputStream contents = isMutable(remote) ? new ByteArrayOutputStream() : null;
       try (InputStream body = response.body()) {
