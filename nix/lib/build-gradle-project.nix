@@ -1,51 +1,51 @@
 # buildGradleProject: the sandboxed builds of a Gradle build, from the
-# lockfile `gradle-purifier lock` writes at the build root.
+# lockfile `gradle-purifier lock` writes.
 #
-# The file is a package for callPackage: the first argument set is what it
-# takes from the package set, and the result is the builder. The
-# gradle-purifier overlay (`overlays.default`) adds it to the package set
-# as `buildGradleProject`, so a package written for callPackage takes it
-# like any other dependency:
+# The flake publishes it as lib.gradle-purifier.buildGradleProject, with
+# the nix-purifiers library that its flake pins:
 #
-#   { buildGradleProject }: (buildGradleProject { src = ./.; }).packages.app
+#   lib.gradle-purifier.buildGradleProject { inherit pkgs; src = ./.; }
 #
-# and `buildGradleProject.override` replaces what it takes from the set.
-# The builder returns
+# The result is
 #
-#   repository       the tree of every locked download
-#   distribution     the Gradle distribution of the lock, unpacked
-#   packages.<id>    a package per project the lock names. Its `out` holds
-#                    the programs (an installed application, with bin/ and
-#                    lib/, and Kotlin/Native executables in bin/) and the
-#                    archives `assemble` makes, in share/archives. Its
-#                    `maven` output, when the project has Maven
-#                    publications, holds them in Maven layout.
+#   packages.<id>  a package per project the lock names. Its `out` holds
+#                  the programs (an installed application, with bin/ and
+#                  lib/, and Kotlin/Native executables in bin/) and the
+#                  archives `assemble` makes, in share/archives. Its
+#                  `maven` output, when the project has Maven publications,
+#                  holds them in Maven layout.
+#   tests          the `check` task of every project, in the sandbox
+#   release        the Maven publications of every project, which
+#                  `gradle-purifier publish` uploads
+#   fetches        the entries of the nix-purifiers library that the build
+#                  fetches
+#
+# and, for other uses, `lock` (the lock as read-lock.nix reads it),
+# `repository` (the tree of every locked download), `distribution` (the
+# Gradle distribution of the lock, unpacked), `konan` (the Kotlin/Native
+# toolchain) and `jdk`.
 {
   lib,
-  stdenv,
-  stdenvNoCC,
-  callPackage,
-  makeWrapper,
-  unzip,
-  zlib,
-  # The JDKs a build can run on; the default JDK of a build is the headless
-  # one of the major version its lock was made with.
-  javaPackages,
+  # The nix-purifiers library (lib.purifier).
+  purifier,
 }:
 {
+  pkgs,
   # The root of the Gradle build.
   src,
-  # The lockfile; the default is the one `gradle-purifier lock` writes at
-  # the build root.
+  # The lockfile. The default is the one `gradle-purifier lock` writes at
+  # the build root. A build kept external passes one from outside `src`.
   lockFile ? src + "/gradle-purifier.lock.json",
-  # The JDK that runs Gradle and the applications.
+  # The fetchers that replace nixpkgs' own, such as a fetchurl that sends
+  # credentials. They go to the library's fetchEntry and tree.
+  fetchers ? { },
+  # The JDK that runs Gradle and the applications. The default is nixpkgs'
+  # headless JDK of the Java major version the lock was made with.
   jdk ? null,
   # Further JDKs for the build's Java toolchains, when a toolchain asks for
   # another Java version than `jdk`. Gradle downloads no toolchain in the
   # sandbox.
   toolchainJdks ? [ ],
-  # Replaces the built-in fetcher; see fetch.nix.
-  fetchurl ? null,
   # Runs the checks of each project (`check`) in its package build.
   doCheck ? false,
   # Filters the build root before it is copied into the store, as the
@@ -54,7 +54,22 @@
   srcFilter ? null,
 }:
 let
-  lock = import ./lock.nix { inherit lockFile; };
+  inherit (pkgs)
+    stdenv
+    stdenvNoCC
+    makeWrapper
+    unzip
+    zlib
+    ;
+
+  # The lock in memory (read-lock.nix). checkLock fails evaluation with
+  # its problems: a stale, tampered, malformed or incomplete lockfile.
+  lock = purifier.checkLock (import ./read-lock.nix { inherit lib; } { inherit src lockFile; });
+  inherit (lock) gradle;
+  # The downloads this system needs.
+  entries = purifier.entriesFor stdenv.hostPlatform.system lock;
+  konanEntries = lib.filter (e: lib.elem e gradle.konanEntries) entries;
+  hasKonan = gradle.konanEntries != [ ];
 
   # A directory named build is a build output when a build script or a
   # settings script sits beside it.
@@ -89,32 +104,47 @@ let
       || lib.hasPrefix "result" name
     );
 
-  filteredSrc = builtins.path {
-    path = src;
-    name = "gradle-source";
-    filter = if srcFilter != null then srcFilter else defaultSrcFilter;
-  };
+  filteredSrc =
+    if builtins.isPath src then
+      builtins.path {
+        path = src;
+        name = "gradle-source";
+        filter = if srcFilter != null then srcFilter else defaultSrcFilter;
+      }
+    else
+      src;
 
-  javaMajor = builtins.head (lib.splitString "." lock.javaVersion);
   defaultJdk =
-    javaPackages.compiler."openjdk${javaMajor}".headless
-      or (throw "gradle-purifier: javaPackages has no openjdk${javaMajor} for the Java ${lock.javaVersion} the lock was made with; pass `jdk`.");
+    pkgs.javaPackages.compiler."openjdk${toString gradle.javaMajor}".headless
+      or (throw "gradle-purifier: javaPackages has no openjdk${toString gradle.javaMajor} for the Java the lock was made with; pass `jdk`.");
   jdk' = if jdk != null then jdk else defaultJdk;
   javaHome = j: j.home or "${j}/lib/openjdk";
 
-  repository = callPackage ./repository.nix { inherit lockFile fetchurl; };
+  fetchEntry = purifier.fetchEntry ({ inherit pkgs; } // fetchers);
+
+  repository = purifier.tree (
+    {
+      inherit pkgs;
+      name = "gradle-purifier-repository";
+      inherit entries;
+    }
+    // fetchers
+  );
 
   # Kotlin/Native's toolchain, when the lock holds one (see konan.nix).
-  konan = callPackage ./konan.nix { inherit lockFile fetchurl; };
-  hasKonan = (lock.konanDependencies or [ ]) != [ ];
+  konan = pkgs.callPackage ./konan.nix {
+    archives = map (entry: {
+      name = lib.removeSuffix ".tar.gz" (baseNameOf entry.path);
+      src = fetchEntry entry;
+    }) konanEntries;
+  };
   # The Kotlin/Native name of the host, whose dynamic linker the programs
   # Kotlin/Native links name.
   konanHost = if stdenv.hostPlatform.isAarch64 then "linux_arm64" else "linux_x64";
   konanSetup =
     assert
-      !hasKonan
-      || lock.konanHost == konanHost
-      || throw "gradle-purifier: the lock holds the Kotlin/Native toolchain of ${lock.konanHost}, which does not run on ${konanHost}; make the lock on ${konanHost}.";
+      gradle.konanHost == konanHost
+      || throw "gradle-purifier: the lock holds the Kotlin/Native toolchain of ${gradle.konanHost}, which does not run on ${konanHost}; make the lock on ${konanHost}.";
     ''
       # Kotlin/Native finds its toolchain already extracted, and downloads
       # nothing. It writes its distribution and its caches beside it.
@@ -138,8 +168,12 @@ let
     '';
 
   distribution = stdenvNoCC.mkDerivation {
-    name = "gradle-${lock.gradleVersion}";
-    src = "${repository}/${lock.distribution}";
+    name = "gradle-${gradle.gradleVersion}";
+    src = fetchEntry (
+      lib.findFirst (e: e.path == gradle.distribution)
+        (throw "gradle-purifier: ${toString lockFile} names the Gradle distribution ${gradle.distribution}, which it does not hold; run 'gradle-purifier lock --relock'.")
+        entries
+    );
     nativeBuildInputs = [ unzip ];
     dontConfigure = true;
     dontBuild = true;
@@ -161,9 +195,10 @@ let
   initScript = ./purifier.init.gradle;
   portal = "https/plugins.gradle.org/m2";
 
-  # The Gradle invocation shared by every package build; the lock run
-  # (`gradle-purifier lock`) runs Gradle the same way, so a lock made with
-  # it holds what this needs.
+  # The Gradle invocation shared by every build; the lock run (`gradle-purifier
+  # lock`) runs Gradle the same way, so a lock made with it holds what this
+  # needs. A build that needs a file the lock does not hold fails with what
+  # to run.
   runGradle = tasks: ''
     export HOME="$TMPDIR/home"
     export GRADLE_USER_HOME="$TMPDIR/gradle-home"
@@ -174,6 +209,7 @@ let
     export JAVA_HOME=${javaHome jdk'}
     mkdir -p "$HOME" "$GRADLE_USER_HOME"
     ${lib.optionalString hasKonan konanSetup}
+    status=0
     ${distribution}/bin/gradle \
       --offline --no-daemon --no-configuration-cache --no-build-cache --no-watch-fs \
       --console=plain --stacktrace \
@@ -187,8 +223,16 @@ let
         lib.concatMapStringsSep "," javaHome ([ jdk' ] ++ toolchainJdks)
       } \
       -Pkotlin.compiler.execution.strategy=in-process \
-      ${lib.escapeShellArgs lock.gradleArguments} \
-      ${lib.escapeShellArgs tasks} </dev/null
+      ${lib.escapeShellArgs gradle.gradleArguments} \
+      ${lib.escapeShellArgs tasks} </dev/null 2> >(tee "$TMPDIR/gradle-errors" >&2) || status=$?
+    wait
+    if [ "$status" -ne 0 ]; then
+      if grep -q -e 'Could not find' -e 'Could not resolve' "$TMPDIR/gradle-errors" \
+        && grep -q -F ${repository} "$TMPDIR/gradle-errors"; then
+        echo "gradle-purifier: the build needs a file that ${baseNameOf (toString lockFile)} does not hold (Gradle names it above); run 'gradle-purifier lock --relock'." >&2
+      fi
+      exit "$status"
+    fi
   '';
 
   # The build links each artifact of a publication, its POM and its Gradle
@@ -244,7 +288,7 @@ let
           mkdir -p "$out/bin"
           for executable in ${lib.escapeShellArgs executables}; do
             if [ ! -f "$built/bin/$executable" ]; then
-              echo "gradle-purifier: the lock names the executable $executable, which this build of ${project.id} did not link; run gradle-purifier lock" >&2
+              echo "gradle-purifier: the lock names the executable $executable, which this build of ${project.id} did not link; run 'gradle-purifier lock'." >&2
               exit 1
             fi
             cp "$built/bin/$executable" "$out/bin/$executable"
@@ -254,7 +298,7 @@ let
           mkdir -p "$out/${archiveDirectory}"
           for archive in ${lib.escapeShellArgs archives}; do
             if [ ! -f "$built/archives/$archive" ]; then
-              echo "gradle-purifier: the lock names the archive $archive, which this build of ${project.id} did not make; run gradle-purifier lock" >&2
+              echo "gradle-purifier: the lock names the archive $archive, which this build of ${project.id} did not make; run 'gradle-purifier lock'." >&2
               exit 1
             fi
             cp "$built/archives/$archive" "$out/${archiveDirectory}/$archive"
@@ -273,7 +317,7 @@ let
               return 0
             fi
             if [ ! -f "$file" ]; then
-              echo "gradle-purifier: the lock names $1/$2, which this build of ${project.id} did not publish; run gradle-purifier lock" >&2
+              echo "gradle-purifier: the lock names $1/$2, which this build of ${project.id} did not publish; run 'gradle-purifier lock'." >&2
               exit 1
             fi
             mkdir -p "$maven/${linkDirectory}/$1"
@@ -323,15 +367,44 @@ let
       // lib.optionalAttrs (mainProgram != null) { inherit mainProgram; };
     });
 
-  packages = builtins.mapAttrs (_: mkPackage) lock.projectsById;
+  packages = builtins.mapAttrs (_: mkPackage) lock.outputs;
+
+  # The `check` task of every project of the build, in the sandbox.
+  tests = stdenvNoCC.mkDerivation {
+    name = "${gradle.rootProjectName}-tests";
+    src = filteredSrc;
+    dontConfigure = true;
+    buildPhase = ''
+      runHook preBuild
+      ${runGradle [ "check" ]}
+      runHook postBuild
+    '';
+    installPhase = ''
+      runHook preInstall
+      mkdir -p "$out"
+      runHook postInstall
+    '';
+  };
+
+  # What `gradle-purifier publish` uploads: the Maven output of every
+  # project with publications, by project id.
+  release = pkgs.linkFarm "${gradle.rootProjectName}-release" (
+    lib.mapAttrsToList (id: package: {
+      name = id;
+      path = package.maven;
+    }) (lib.filterAttrs (_: package: package.gradleProject.publications != [ ]) packages)
+  );
 in
 {
   inherit
+    packages
+    tests
+    release
     lock
     repository
     distribution
     konan
-    packages
     ;
+  fetches = lock.entries;
   jdk = jdk';
 }

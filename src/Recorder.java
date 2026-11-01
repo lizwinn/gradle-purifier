@@ -44,7 +44,8 @@ import java.util.concurrent.Executors;
  * remote URL, the SRI SHA-256 hash of the body, and a mirror URL that serves the same file, or
  * nothing, separated by tabs. For a file whose remote contents change over time (see {@link
  * #isMutable}), the line holds "inline" and the contents in Base64 instead of the URL and the
- * hash.
+ * hash. A file that the lock pins (see {@link #readPinned}) is served and recorded from the
+ * pinned contents, without a request to the remote.
  *
  * <p>Usage: {@code java Recorder <records file> <port file> [<tunnel host>...]}. The server
  * listens on an ephemeral port of the loopback address, and an HTTPS proxy that tunnels to the
@@ -80,12 +81,68 @@ public final class Recorder {
   private static final boolean FETCH_FROM_MIRROR =
       "1".equals(System.getenv("GRADLE_PURIFIER_CENTRAL_MIRROR"));
 
+  /** The digest algorithm of each checksum suffix. */
+  private static final java.util.Map<String, String> CHECKSUM_ALGORITHMS =
+      java.util.Map.of(".sha1", "SHA-1", ".sha256", "SHA-256", ".sha512", "SHA-512", ".md5", "MD5");
+
   private final HttpClient client;
   private final Writer records;
+  private final java.util.Map<String, byte[]> pinned;
 
-  private Recorder(HttpClient client, Writer records) {
+  private Recorder(HttpClient client, Writer records, java.util.Map<String, byte[]> pinned) {
     this.client = client;
     this.records = records;
+    this.pinned = pinned;
+  }
+
+  /**
+   * The pinned files of the file that the environment variable GRADLE_PURIFIER_PINNED names, by
+   * their path in the tree of locked downloads. Each line of the file holds a path and the
+   * contents in Base64, separated by a tab. `gradle-purifier lock` pins the version listings that
+   * the lockfile holds, so that a relock resolves every dynamic version as the lock did.
+   */
+  private static java.util.Map<String, byte[]> readPinned() throws IOException {
+    String file = System.getenv("GRADLE_PURIFIER_PINNED");
+    java.util.Map<String, byte[]> pinned = new java.util.HashMap<>();
+    if (file == null || file.isEmpty()) {
+      return pinned;
+    }
+    for (String line : Files.readAllLines(Path.of(file), StandardCharsets.UTF_8)) {
+      int tab = line.indexOf('\t');
+      if (tab > 0) {
+        pinned.put(line.substring(0, tab), Base64.getDecoder().decode(line.substring(tab + 1)));
+      }
+    }
+    return pinned;
+  }
+
+  /**
+   * The contents the recorder serves at `path` from the pinned files, or null when the remote
+   * serves it. A checksum file of a pinned file, such as maven-metadata.xml.sha1, is the
+   * checksum of the pinned contents in lowercase hexadecimal, so that it matches them.
+   */
+  static byte[] pinnedContents(java.util.Map<String, byte[]> pinned, String path) {
+    byte[] contents = pinned.get(path);
+    if (contents != null) {
+      return contents;
+    }
+    for (java.util.Map.Entry<String, String> checksum : CHECKSUM_ALGORITHMS.entrySet()) {
+      String suffix = checksum.getKey();
+      if (path.endsWith(suffix)) {
+        byte[] described = pinned.get(path.substring(0, path.length() - suffix.length()));
+        if (described == null) {
+          return null;
+        }
+        try {
+          return java.util.HexFormat.of()
+              .formatHex(MessageDigest.getInstance(checksum.getValue()).digest(described))
+              .getBytes(StandardCharsets.US_ASCII);
+        } catch (NoSuchAlgorithmException e) {
+          throw new IllegalStateException(e);
+        }
+      }
+    }
+    return null;
   }
 
   public static void main(String[] args) throws IOException {
@@ -133,7 +190,7 @@ public final class Recorder {
             StandardCharsets.UTF_8,
             StandardOpenOption.CREATE,
             StandardOpenOption.APPEND);
-    Recorder recorder = new Recorder(builder.build(), records);
+    Recorder recorder = new Recorder(builder.build(), records, readPinned());
 
     HttpServer server =
         HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
@@ -334,6 +391,22 @@ public final class Recorder {
     URI remote = remoteOf(exchange.getRequestURI().getRawPath());
     if (remote == null || !(method.equals("GET") || method.equals("HEAD"))) {
       exchange.sendResponseHeaders(remote == null ? 404 : 405, -1);
+      return;
+    }
+
+    String path = treePathOf(remote);
+    byte[] held = pinnedContents(pinned, path);
+    if (held != null) {
+      exchange.getResponseHeaders().add("Content-Length", Long.toString(held.length));
+      if (method.equals("HEAD")) {
+        exchange.sendResponseHeaders(200, -1);
+      } else {
+        exchange.sendResponseHeaders(200, held.length > 0 ? held.length : -1);
+        try (OutputStream out = exchange.getResponseBody()) {
+          out.write(held);
+        }
+      }
+      record(path, "inline", Base64.getEncoder().encodeToString(held), "");
       return;
     }
 

@@ -6,15 +6,24 @@ The tests come in two layers.
    `nix flake check`:
    - `gradle-purifier` builds the command, which compiles the recorder
      with warnings as errors and runs shellcheck on the script.
-   - `nix-library-version` checks that `lock.nix` rejects another lock
-     format.
+   - `recorder-unit` (`tests/RecorderTest.java`) and `cli-unit`
+     (`tests/cli-unit.sh`) test the mapping of URLs, the pinned version
+     listings, the entries made from the records of the recorder, the
+     content hash and the parsing of the command.
+   - `conformance-stale`, `-tampered`, `-malformed` and `-missing` give
+     the builder the lockfile of the Java library fixture with one
+     change each, from `tests/conformance/` (written by `lockfiles.nix`
+     through `generate.sh`). The first three must fail evaluation with a
+     problem that names the fix; the missing download must fail the
+     build with a message that names `gradle-purifier lock`.
+     `conformance-external` builds the Java library from a `src` without
+     its lockfile and a `lockFile` outside it.
    - The `java-library*` checks build `tests/fixtures/java-library` and
      run its tests. The fixture is a Groovy-DSL build on Gradle 8 with a
      Maven publication and a sources jar, a dynamic version (resolved
      through an inline `maven-metadata.xml`), a library from an included
      build, and a file from an Ivy repository that serves plain files by
-     pattern. The checks look for the artifact links, the classes and the
-     Ivy file in the package.
+     pattern.
    - The `kotlin-*` checks build `tests/fixtures/kotlin-app` and run its
      tests. The fixture is a Kotlin-DSL build on Gradle 9 with a version
      catalog, a convention plugin in buildSrc that applies the Kotlin JVM
@@ -24,22 +33,30 @@ The tests come in two layers.
      from its package.
    - The `kotlin-native*` checks, on x86_64-linux, build
      `tests/fixtures/kotlin-native`, a Kotlin/Native build with a linuxX64
-     library, its tests and a release executable, locked on JDK 17 with
-     Kotlin/Native's toolchain. `kotlin-native-runs` runs the executable
-     from its package.
-2. **Interactive tests** (`tests/interactive.sh`) run outside the sandbox
-   with Gradle's network cut off (every JVM gets a proxy that refuses). On
-   copies of both fixtures, each with an empty Gradle user home, the
-   builds and their tests must run from the locked downloads, the
-   application must run, and Gradle's download cache must stay empty.
-   `gradle-purifier publish` must publish the artifacts and module
-   metadata Nix built, byte for byte, without compiling the project.
-   After `gradle-purifier ide`, an import through the Gradle tooling API
-   (`tests/ToolingImport.java`, the EclipseProject model that Buildship
-   and jdtls use) must resolve the classpath with sources from the lock.
-   A changed build script must make the command fall back to `./gradlew`,
-   and a malformed lockfile, a tampered hash and a missing entry must each
-   fail with a message that names the command to run.
+     library, its tests and a release executable, locked on JDK 17.
+2. **CI jobs** run what needs the network or Nix outside the sandbox, on
+   both systems:
+   - `conformance-relock` relocks every fixture
+     (`tests/relock-fixtures.sh --relock`) and fails when a lockfile
+     changes.
+   - `conformance-rebuild` builds the fixtures and builds them again with
+     `nix build --rebuild`, which fails when the outputs differ.
+   - `conformance-offline` (`tests/offline.sh`) runs `prefetch` on a copy
+     of each fixture with an empty Gradle user home, then `./gradlew` in
+     a network namespace without a network: the builds and their tests
+     must run, the programs must run, and Gradle's download cache must
+     stay empty. `gradle-purifier publish` must publish the artifacts and
+     module metadata Nix built, byte for byte, without compiling the
+     project. An import through the Gradle tooling API
+     (`tests/ToolingImport.java`, the EclipseProject model that Buildship
+     and jdtls use) must resolve the classpath with sources from the
+     lock. A lockfile that is not JSON, an edited lockfile, a wrong hash,
+     a missing download and a changed build definition must each fail
+     with a message that names the command to run.
+   - `conformance-update` (`tests/update.sh`) updates commons-lang3 in a
+     copy of `tests/fixtures/update`, whose `gradle.lockfile` pins 3.12.0,
+     and checks that both lockfiles move and that `prefetch` accepts
+     them.
 
 The lockfiles of the fixtures are test data. `tests/relock-fixtures.sh`
 renews them; it needs the network.

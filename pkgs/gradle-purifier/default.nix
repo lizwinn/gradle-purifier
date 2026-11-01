@@ -7,9 +7,11 @@
   # The nixpkgs source of the package set, which `gradle-purifier publish`
   # builds the packages with.
   path,
+  # The source of the nix-purifiers library, at the revision this flake
+  # pins; the default package overlay passes it.
+  purifierSource ? throw "gradle-purifier: the command needs purifierSource, the source of the nix-purifiers library",
   stdenv,
   stdenvNoCC,
-  zlib,
   writeShellApplication,
   jdk21_headless,
   coreutils,
@@ -60,7 +62,7 @@ writeShellApplication {
         "@java@"
         "@lockVersion@"
         "@nixpkgs@"
-        "@konanLibraryPath@"
+        "@purifier@"
         "@dynamicLinker@"
       ]
       [
@@ -69,10 +71,7 @@ writeShellApplication {
         "${jdk.home or "${jdk}/lib/openjdk"}"
         (toString (import ../../nix/lib/lock-version.nix))
         "${path}"
-        (lib.makeLibraryPath [
-          stdenv.cc.cc.lib
-          zlib
-        ])
+        "${purifierSource}"
         stdenv.cc.bintools.dynamicLinker
       ]
       (builtins.readFile ../../src/gradle-purifier.sh);

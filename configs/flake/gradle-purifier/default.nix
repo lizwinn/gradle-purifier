@@ -26,8 +26,8 @@
   };
 
   # `nix run github:nix-purifiers/gradle-purifier -- lock` locks the Gradle
-  # build in the current directory; without `lock`, the command runs Gradle
-  # on the locked downloads.
+  # build in the current directory, and `-- prefetch` sets up ./gradlew to
+  # build it from the locked downloads.
   perSystem =
     { config, pkgs, ... }:
     {
@@ -61,7 +61,7 @@
           {
             checks = import ../../../tests {
               inherit pkgs;
-              overlay = self.overlays.default;
+              gradlePurifier = self.lib.gradle-purifier;
               inherit (self.packages.${system}) gradle-purifier;
             };
             treefmt.programs.nixfmt.enable = true;

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -86,11 +90,46 @@ public final class RecorderTest {
         null,
         Recorder.mirrorOf(URI.create("https://plugins.gradle.org/m2/org/a/1/a-1.pom")));
 
+    // A pinned version listing is served as pinned, and its checksum files match it.
+    String listing = "https/h/org/a/maven-metadata.xml";
+    Map<String, byte[]> pinned = Map.of(listing, "<metadata/>\n".getBytes(StandardCharsets.UTF_8));
+    expect(
+        "a pinned file",
+        "<metadata/>\n",
+        text(Recorder.pinnedContents(pinned, listing)));
+    expect(
+        "the SHA-1 of a pinned file is its hexadecimal digest",
+        hex("SHA-1", "<metadata/>\n"),
+        text(Recorder.pinnedContents(pinned, listing + ".sha1")));
+    expect(
+        "the MD5 of a pinned file is its hexadecimal digest",
+        hex("MD5", "<metadata/>\n"),
+        text(Recorder.pinnedContents(pinned, listing + ".md5")));
+    expect("an unpinned file", null, Recorder.pinnedContents(pinned, "https/h/org/a/1/a-1.jar"));
+    expect(
+        "the checksum of an unpinned file",
+        null,
+        Recorder.pinnedContents(pinned, "https/h/org/a/1/a-1.jar.sha1"));
+
     if (failures > 0) {
       System.err.println(failures + " recorder tests failed");
       System.exit(1);
     }
     System.out.println("recorder tests passed");
+  }
+
+  private static String text(byte[] bytes) {
+    return bytes == null ? null : new String(bytes, StandardCharsets.UTF_8);
+  }
+
+  private static String hex(String algorithm, String text) {
+    try {
+      return java.util.HexFormat.of()
+          .formatHex(
+              MessageDigest.getInstance(algorithm).digest(text.getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private static void expect(String name, Object expected, Object actual) {

@@ -1,13 +1,14 @@
 {
   "version": 1,
-  "gradleVersion": "8.14.3",
-  "javaVersion": "21.0.12.1",
-  "distribution": "https/services.gradle.org/distributions/gradle-8.14.3-bin.zip",
+  "contentHash": "sha256:472c432ff7be3a785fc3afd370630baeaee2ed386c76d8967c982539d1173be4",
+  "inputsHash": "3c592141966a0b3a291b2af944dff085e33ca5b06245a27d4a94804723125754",
   "gradleArguments": [],
-  "inputsHash": "7a3664196a940dd0f974269a210e011c88663eb466fb2b348137ed1b3ca9f3f7",
+  "javaMajor": 21,
+  "distribution": "https/services.gradle.org/distributions/gradle-8.14.3-bin.zip",
+  "rootProjectName": "greeting",
+  "konanHost": "linux_x64",
   "projects": [
     {
-      "id": "greeting",
       "path": ":",
       "publications": [
         {
@@ -16,13 +17,11 @@
           "artifactId": "greeting",
           "artifacts": [
             {
-              "key": "greeting-sources.jar",
-              "classifier": "sources",
+              "classifier": null,
               "extension": "jar"
             },
             {
-              "key": "greeting.jar",
-              "classifier": null,
+              "classifier": "sources",
               "extension": "jar"
             }
           ]
@@ -36,53 +35,29 @@
       ]
     }
   ],
-  "konanDependencies": [],
-  "konanHost": "linux_x64",
   "artifacts": [
     {
-      "path": "https/nodejs.org/dist/v20.11.0/SHASUMS256.txt",
       "url": "https://nodejs.org/dist/v20.11.0/SHASUMS256.txt",
-      "mirrors": [],
       "hash": "sha256-rqOfuhUVjXkqC8gce+0xuOYBTPn0MbERAA75OwIJX9I="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/apache/33/apache-33.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apache/apache/33/apache-33.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/apache/33/apache-33.pom"
-      ],
       "hash": "sha256-14vYUkxfg4ChkKZSVoZimpXf5RLfIRETg6bYwJI6RBU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0-javadoc.jar"
-      ],
       "hash": "sha256-eWUYAl9D+MjLZk20GfxrqEvZLfh/oSzcdnBJAXhbgeU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0-sources.jar"
-      ],
       "hash": "sha256-X9ysIa0yl2YFSpU2fXWD383Kc30iHV4BpfKhmMBMaxg="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.jar"
-      ],
       "hash": "sha256-bucx31yOWil2ocoCO2uzIOqNNTn75kyKHVy3ZRJ8M7Q="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.pom"
-      ],
       "hash": "sha256-NRxuSUDpObHzMN9H9g8Tujg9uB7gCBga9UHzoqbSpWw="
     },
     {
@@ -90,465 +65,235 @@
       "contents": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>org.apache.commons</groupId>\n  <artifactId>commons-lang3</artifactId>\n  <versioning>\n    <latest>3.21.0</latest>\n    <release>3.21.0</release>\n    <versions>\n      <version>3.0</version>\n      <version>3.0.1</version>\n      <version>3.1</version>\n      <version>3.2</version>\n      <version>3.2.1</version>\n      <version>3.3</version>\n      <version>3.3.1</version>\n      <version>3.3.2</version>\n      <version>3.4</version>\n      <version>3.5</version>\n      <version>3.6</version>\n      <version>3.7</version>\n      <version>3.8</version>\n      <version>3.8.1</version>\n      <version>3.9</version>\n      <version>3.10</version>\n      <version>3.11</version>\n      <version>3.12.0</version>\n      <version>3.13.0</version>\n      <version>3.14.0</version>\n      <version>3.15.0</version>\n      <version>3.16.0</version>\n      <version>3.17.0</version>\n      <version>3.18.0</version>\n      <version>3.19.0</version>\n      <version>3.20.0</version>\n      <version>3.21.0</version>\n    </versions>\n    <lastUpdated>20260929180843</lastUpdated>\n  </versioning>\n</metadata>\n"
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-parent/73/commons-parent-73.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-parent/73/commons-parent-73.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-parent/73/commons-parent-73.pom"
-      ],
       "hash": "sha256-TtRFYLB/hEhHnf0eg6Qiuk6D5gs25RsocaxQKm1cG+o="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-parent/78/commons-parent-78.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-parent/78/commons-parent-78.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-parent/78/commons-parent-78.pom"
-      ],
       "hash": "sha256-Ai0gLmVe3QTyoQ7L5FPZKXeSTTg4Ckyow1nxgXqAMg4="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0-javadoc.jar"
-      ],
       "hash": "sha256-xHyvwN4mY76D4MGupFtNeWkKBXPc9MPqQm0Ph4pEyE4="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0-sources.jar"
-      ],
       "hash": "sha256-74mD8jNr6O4K6gcXXT9mEQEUK6Iz2DDFkETdpyLJFJw="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0.jar"
-      ],
       "hash": "sha256-HjI6UBEn33jtCYfzRdadZdDqf6PU+1s/hKrro6iyDzg="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apache/commons/commons-text/1.13.0/commons-text-1.13.0.pom"
-      ],
       "hash": "sha256-1GYUvcptEZXDM7qfcwzQhYXE8zKkPqe5C2A1rYBIcdg="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-javadoc.jar"
-      ],
       "hash": "sha256-1YyiFlzGYyZBNqF7bWtSV+/Ph8wdFJpP97F9nbH4DuY="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2-sources.jar"
-      ],
       "hash": "sha256-J3p6QxVBKBe+tmVbMk3HJ2Yh6V6/8AuL9l4XontoXi0="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
-      ],
       "hash": "sha256-tQlEisUG1gcxnxglN/CzXXEAdYLsdBgyofER5bW3Czg="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module"
-      ],
       "hash": "sha256-4IAoExN1s1fR0oc06aT7QhbahLJAZByz7358fWKCI/w="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom"
-      ],
       "hash": "sha256-MjVQgdEJCVw9XTdNWkO09MG3XVSemD71ByPidy5TAqA="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.module"
-      ],
       "hash": "sha256-9+2+Z/IgQnCMQQq8VHQI5cR29An1ViNqEXkiEnSi7S0="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.pom"
-      ],
       "hash": "sha256-5nRZ1IgkJKxjdPQNscj0ouiJRrNAugcsgL6TKivkZE0="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.2/junit-bom-5.11.2.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.2/junit-bom-5.11.2.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.2/junit-bom-5.11.2.module"
-      ],
       "hash": "sha256-iDoFuJLxGFnzg23nm3IH4kfhQSVYPMuKO+9Ni8D1jyw="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.2/junit-bom-5.11.2.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.2/junit-bom-5.11.2.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.2/junit-bom-5.11.2.pom"
-      ],
       "hash": "sha256-9I6IU4qsFF6zrgNFqevQVbKPMpo13OjR6SgTJcqbDqI="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.module"
-      ],
       "hash": "sha256-qaTye+lOmbnVcBYtJGqA9obSd9XTGutUgQR89R2vRuQ="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/junit-bom/5.11.4/junit-bom-5.11.4.pom"
-      ],
       "hash": "sha256-GdS3R7IEgFMltjNFUylvmGViJ3pKwcteWTpeTE9eQRU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-javadoc.jar"
-      ],
       "hash": "sha256-YWAUw/yOdi/TisorI+T4htYs6WrLlWVkvDXDqhPPGc0="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4-sources.jar"
-      ],
       "hash": "sha256-X1RjlXK8r8OTdU8M6JZ3GSlHwB/+JgCll7YLWbxDfzs="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar"
-      ],
       "hash": "sha256-q4PvnlGsRZfVnSa0tYgSEpVQ4vV5pATIr30J9c5bQpM="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.module"
-      ],
       "hash": "sha256-puov77OqWGj9engK4doRYudt2jdgtIAVwqQZ0jcv88s="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.pom"
-      ],
       "hash": "sha256-US0j/znHZmWho2RVJiMLz4ib1JiEME9/6+BHsBjuszk="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-javadoc.jar"
-      ],
       "hash": "sha256-UiJtfsXcd4oHycOZPlblO7xvdYeBpp8u0K4gkFFD5p8="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4-sources.jar"
-      ],
       "hash": "sha256-sjQ0Uc9/nNAES0phStyh3YjzqSZSVsiKSm87aOZQdcg="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar"
-      ],
       "hash": "sha256-zfisWfP613TKc4rQOJCVDuuRgz7w6JCHUxd+3SbxWBw="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.module"
-      ],
       "hash": "sha256-25EWOorwBaMnmFZd1nU3clGJWQ3qttoDsx292kVoahg="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.pom"
-      ],
       "hash": "sha256-sKMjsNA0REQdE9RjC0DbXvhBYNLC9YXU1kbcOIL5kgc="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4-javadoc.jar"
-      ],
       "hash": "sha256-ehLFcdDlv/Cib8yU3TzJX2XXIpIvQCe7XMzhi5U0Kec="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4-sources.jar"
-      ],
       "hash": "sha256-BzzhsPf6PuHonjAeX5IHgFjOdwK6ZiZSzDky2VcxN7w="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar"
-      ],
       "hash": "sha256-AqbgFd586UrH8lbn+gW4CR3qhh/nmlVaeZMxPQ9sfZY="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.module"
-      ],
       "hash": "sha256-WIZbi0uZi5qxnBP45BO34dSBk3TdXfaXYMTAsLxOmJU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.pom"
-      ],
       "hash": "sha256-jDWbvqB8ZKas3YweE7T3cFiyQys16G6ald3GMkmgrVQ="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4-javadoc.jar"
-      ],
       "hash": "sha256-M6mqr3x66Bd9Tf6vJFrVjlZGdzEYAiVrvoEE7vR7Yec="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4-sources.jar"
-      ],
       "hash": "sha256-vWKLBrg7DYgwtTdHt/RmvuvKEtSAjxF2YKwG5Hr5nRw="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar"
-      ],
       "hash": "sha256-qogOSvuofURzV+TB/AmMXLHSAMuUA0lsANOzWlvQ6Ns="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.module"
-      ],
       "hash": "sha256-o8NT7XUWrhg16rlaCH9PCaWwzH0LiwOf53oDm4q1IQM="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.pom"
-      ],
       "hash": "sha256-qGLfEe5TmYLvyxQdnArecDe7oCZdC1idX7hNsNIS8dk="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-javadoc.jar"
-      ],
       "hash": "sha256-AMYI1YV8OWuMxVwM0uK55RONwXdxZ0tvtO00HCYugZA="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4-sources.jar"
-      ],
       "hash": "sha256-ovDFYqf+QGYETZO7IM5Se0Zpwd2u/KIkSlM1bbdHxeI="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar"
-      ],
       "hash": "sha256-nt2Wmw0GcMVBBbyRrnm9HG9QPhIRX6uoIHO4TIa7wzQ="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.module"
-      ],
       "hash": "sha256-C54mJcj0aLPNQTLMCoBfif5B+FLRrf/3Xz6xRlyhy2s="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.pom"
-      ],
       "hash": "sha256-zRLSt8JC8WVUjtnJQGFg3O22CAkltHz3MeD9rl+0vOI="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-javadoc.jar"
-      ],
       "hash": "sha256-decGaeUw4d0l1fbevW/J2WKk/J6sG9wFeZy0m4jXmR8="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4-sources.jar"
-      ],
       "hash": "sha256-lqzHvFM/UkIaFJ+v8uPp1pWNFn9CANp0gVsgj5hGphU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar"
-      ],
       "hash": "sha256-sd2Zj2T5rK3BWWbZzT0IB0ZiZ3s+OQ8KOPy/C7THIzA="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.module"
-      ],
       "hash": "sha256-v2zh+1lR3Gx942re72rq9474LWODHFzOvOOI2p/F/iU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.pom"
-      ],
       "hash": "sha256-lDRxV5mEIS++adA+3sfC/0+6sYiL4LgMJl6nCGn9ir0="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-javadoc.jar"
-      ],
       "hash": "sha256-kT3Sq9vCt8G/VHYZ18UKxgh8a01ojwrztYoN+xGpVyw="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4-sources.jar"
-      ],
       "hash": "sha256-5WDl57xu7RhHdPdaeza4JOIOyBi+S5kSE8DTGv9CYMU="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.jar",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.jar"
-      ],
       "hash": "sha256-10ML0Cnn/M7VPuRF5NLRqKHgQ+pMTfQ7YzWoV/eXYa4="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.module",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.module"
-      ],
       "hash": "sha256-YMRTMgm6WHsc2n1ywIfzUaMjH5uRyU8/djlLDiI0HMQ="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.pom",
       "url": "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/junit/platform/junit-platform-launcher/1.11.4/junit-platform-launcher-1.11.4.pom"
-      ],
       "hash": "sha256-tnzVOALgaqgqpZZumftCkX0iBFeEnlwIDINgdT7WfDE="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-javadoc.jar",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-javadoc.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-javadoc.jar"
-      ],
       "hash": "sha256-gRgCSe2jBUy8/4O1LQ6ZMC0EnPtswchVUOLEmLKpEiM="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-sources.jar",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-sources.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0-sources.jar"
-      ],
       "hash": "sha256-ckok46aCZ9XrrJQROJoVY4px5QxiRI/6WPWcNNXB67I="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
-      ],
       "hash": "sha256-SOLfY2yrZWPO1k3N/4q7I1VifLI27wvzdZhoLd90Lxs="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module"
-      ],
       "hash": "sha256-SL8dbItdyU90ZSvReQD2VN63FDUCSM9ej8onuQkMjg0="
     },
     {
-      "path": "https/repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom",
       "url": "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom",
-      "mirrors": [
-        "https://maven-central.storage-download.googleapis.com/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom"
-      ],
       "hash": "sha256-m/fP/EEPPoNywlIleN+cpW2dQ72TfjCUhwbCMqlDs1U="
     },
     {
-      "path": "https/services.gradle.org/distributions/gradle-8.14.3-bin.zip",
       "url": "https://services.gradle.org/distributions/gradle-8.14.3-bin.zip",
-      "mirrors": [],
       "hash": "sha256-vXEQIhNJMGCVbsIp2Ua+7lcVjb2J0OYrkbyg+ixfNTE="
     }
   ]

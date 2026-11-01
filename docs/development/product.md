@@ -1,35 +1,49 @@
 # Product
 
 gradle-purifier makes Nix the dependency backend and the release builder of
-Gradle builds: a build's downloads are locked by URL and hash, its
-packages build in the Nix sandbox, and interactive Gradle resolves from the
-same locked downloads through the store. The README describes what it
-does for a user.
+Gradle builds: the downloads of a build are locked by URL and hash, its
+packages build in the Nix sandbox, and `./gradlew` and the IDE resolve
+from the same locked downloads through the store. It meets the contract
+of the nix-purifiers (CONTRACT.md of nix-purifiers/purifier). The README
+describes what it does for a user.
 
 ## What it owns
 
 - The init script (`nix/lib/purifier.init.gradle`): the redirection of
-  every remote repository, the lock run's tasks and project description,
-  the sandbox build of a project, and the replacement of publication
-  artifacts in publish mode.
-- The recorder (`src/Recorder.java`): the HTTP server the lock run sends
-  every download through.
+  every remote repository, the tasks and the project description of the
+  lock run, the sandbox build of a project, the replacement of
+  publication artifacts in publish mode, and the hint after a build that
+  needed a download the lock does not hold.
+- The everyday init script (`nix/lib/user.init.gradle`), which `prefetch`
+  installs in the `init.d` of the Gradle user home. It applies the init
+  script in interactive mode to the builds of a root that `prefetch`
+  prepared.
+- The recorder (`src/Recorder.java`): the HTTP server that the lock run
+  sends every download through. It serves the version listings that the
+  lockfile pins.
 - The command (`src/gradle-purifier.sh`, packaged by `pkgs/gradle-purifier`):
-  `lock`, `publish`, and the interactive mode.
-- The Nix library (`nix/lib`), whose builder the flake overlay adds to a
-  package set as `buildGradleProject`, for `callPackage`. The command runs
-  the same files, so the code that builds a lockfile comes from the
-  revision that wrote it.
-- The lockfile format (`nix/lib/lock.nix`, the `jq` program of `lock` in
-  the command), versioned by its `version` field. Its download entries
-  have the shapes of the shared nix-purifiers library: a file entry
-  `{ path, url, mirrors, hash }` and an inline entry `{ path, contents }`.
+  `lock`, `update`, `prefetch` and `publish`.
+- The Nix library (`nix/lib`), published as `lib.gradle-purifier`:
+  `buildGradleProject` and `readLock`. The builder takes the fetchers and
+  the tree of locked downloads from the shared nix-purifiers library. The
+  command builds through `nix/lib/command.nix`, which applies the same
+  builder, so the command and the flake check a lockfile alike.
+- The lockfile format (`nix/lib/read-lock.nix`, and the `jq` program of
+  `lock` in the command), versioned by its `version` field and sealed by
+  its `contentHash`. A file entry is `{ url, hash }` and an inline entry
+  `{ path, contents }`; `readLock` derives the path and the mirrors of a
+  file entry. `inputsHash` is the hash of the build definition
+  (`nix/lib/inputs.nix`), which the command and the stale check compute
+  with the same file.
 
 ## Principles
 
 - **A lock is complete by construction.** It is what a fresh-cache run of
   every package build, with checks, downloaded through the recorder,
   rather than a list of what Gradle is known to fetch.
+- **A lock keeps its resolution.** A relock serves the version listings
+  of the lockfile, so a dynamic version resolves as before; only
+  `update` moves it.
 - **The init script reaches every build.** Gradle applies it to buildSrc
   and to included builds as well as to the root build, so every
   repository of the composite goes through the recorder.
@@ -37,10 +51,10 @@ does for a user.
   the lock run writes only the lockfile.
 - **One path per URL.** A download of `https://host/path` is at
   `https/host/path` in the tree of locked downloads, so the lock run, the
-  sandbox and the interactive mode resolve through the same URLs.
+  sandbox and the everyday loop resolve through the same URLs.
 
 ## Not in scope
 
 A repository that needs credentials works in the Nix build only through
-a fetcher the caller supplies. Kotlin/Native and Kotlin/JS targets are
-not supported (see the README for why).
+a fetcher the caller supplies. Kotlin/JS targets are not supported (see
+the README for why).

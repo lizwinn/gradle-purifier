@@ -2,103 +2,28 @@
 
 gradle-purifier locks the downloads of a Gradle build and builds it in the
 Nix sandbox. It works with Java and Kotlin builds, in the Groovy and the
-Kotlin DSL, on Gradle 8 and 9. Gradle still plans and runs the build. The
+Kotlin DSL, on Gradle 8 and 9, including Kotlin Multiplatform with JVM
+and Kotlin/Native targets. Gradle still plans and runs the build. The
 purifier records every file Gradle downloads in a lockfile, by URL and
 SHA-256, and Nix fetches those files and runs the build offline. The
-repository needs no generated Nix files: the lockfile names the projects
-and their artifacts, so a flake reads the packages from the lockfile alone.
+lockfile also names the projects and their outputs, so a flake knows
+every package without generated Nix files.
 
-It is one of the [nix-purifiers](https://nix-purifiers.github.io), and its
-design follows
-[sbt-purifier](https://github.com/nix-purifiers/sbt-purifier) (formerly
-sbt-nix-backend), which took its model from nixcloud's
-[cargo (libnix)](https://github.com/nixcloud/cargo).
+It is one of the [nix-purifiers](https://nix-purifiers.github.io), and it
+meets their shared contract: the same builder, commands, checks and
+README sections as every other purifier.
 
-- **A lockfile.** `gradle-purifier lock` writes
-  `gradle-purifier.lock.json` at the build root: the Gradle distribution of
-  the wrapper, every file the build downloads, and the projects to build.
-- **Sandboxed builds.** `buildGradleProject`, which the flake's overlay
-  adds to a package set, turns a build and its lockfile into packages: one
-  per project with an application or a Maven publication.
-- **Interactive Gradle on the locked downloads.** `gradle-purifier <tasks>`
-  runs the build's Gradle offline, with every repository read from the
-  locked downloads through the store.
-- **Publishing what Nix built.** `gradle-purifier publish` runs the build's
-  own publish tasks with the files Nix built in place of the ones Gradle
-  would make.
+## Quickstart
 
-## How the lock is made
-
-`gradle-purifier lock` copies the build to `.gradle/purifier/lock-run`
-and runs Gradle there with an empty Gradle user home, through an init
-script. The init script points every remote repository of every build of
-the composite at a recorder on the loopback address: the URL
-`https://host/path` becomes `http://127.0.0.1:<port>/https/host/path`. That
-covers the repositories of settings scripts, of `pluginManagement`, of
-`dependencyResolutionManagement`, of buildscripts and of projects, in the
-root build, in `buildSrc` and in included builds, and the plugin portal.
-The recorder fetches each file from its remote and records its URL and
-hash.
-
-The lock run builds, tests and publishes (into a scratch directory) every
-project, and resolves every resolvable configuration, so the lockfile
-holds what any package build needs. A lockfile is what a fresh run
-downloaded, rather than a list of what Gradle is known to fetch. Gradle's
-own HTTP client gets a proxy that refuses every connection, so a download
-that bypasses the repositories fails in the lock run, rather than later
-in the sandbox.
-
-Some files are recorded in a particular way:
-
-- Gradle compares a file it already holds from one repository with the
-  checksum another repository serves, and then reuses its copy without
-  downloading. The recorder fetches the whole file for such a request, so
-  every repository's copy is in the lockfile.
-- `maven-metadata.xml`, which Gradle reads for dynamic versions and
-  snapshots, changes whenever a new version is published. The lockfile
-  holds its contents rather than its hash, so the build sees the versions
-  the lock run saw.
-- A file of Maven Central has Google's mirror of Maven Central
-  (maven-central.storage-download.googleapis.com) in its `mirrors`, which
-  Nix tries when Maven Central fails. With
-  `GRADLE_PURIFIER_CENTRAL_MIRROR=1`, the lock run downloads from the
-  mirror, which helps when Maven Central limits the rate of requests; the
-  lockfile names Maven Central either way.
-
-`gradle-purifier lock` makes the lock again only when the build
-definition changed: the settings and build scripts, `gradle.properties`,
-the version catalogs, the wrapper properties, and the files of `buildSrc`
-and of included builds. `gradle-purifier lock --relock` makes it again
-regardless.
-
-## Use
-
-Lock the build from its root. The build needs a Gradle wrapper
-(`gradle/wrapper/gradle-wrapper.properties`); the purifier runs the
-distribution the wrapper names.
+The build needs a Gradle wrapper (`gradle/wrapper/gradle-wrapper.properties`);
+the purifier runs the distribution that the wrapper names. Lock the build
+from its root, and commit `gradle-purifier.lock.json`:
 
 ```zsh
 nix run github:nix-purifiers/gradle-purifier -- lock
 ```
 
-The lock run uses `JAVA_HOME`, or nixpkgs' JDK of a major version with
-`--java 17`, or else the command's JDK 21. The builds of a lockfile use
-the Java major version it was made with. Commit
-`gradle-purifier.lock.json`. Gradle arguments after `--` go into the
-lockfile and into every Gradle run of the lock:
-
-```zsh
-nix run github:nix-purifiers/gradle-purifier -- lock -- -Pflavor=release
-```
-
-The flake's `overlays.default` adds `buildGradleProject` to a package set.
-A package written for `callPackage` takes it by name:
-
-```nix
-# package.nix
-{ buildGradleProject }:
-(buildGradleProject { src = ./.; }).packages.app
-```
+Then build it with Nix through `lib.gradle-purifier.buildGradleProject`:
 
 ```nix
 {
@@ -108,90 +33,114 @@ A package written for `callPackage` takes it by name:
   outputs = { nixpkgs, gradle-purifier, ... }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [
-          gradle-purifier.overlays.default
-          (final: prev: { app = final.callPackage ./package.nix { }; })
-        ];
+      pkgs = nixpkgs.legacyPackages.${system};
+      build = gradle-purifier.lib.gradle-purifier.buildGradleProject {
+        inherit pkgs;
+        src = ./.;
       };
     in
     {
-      packages.${system}.app = pkgs.app;
+      packages.${system}.app = build.packages.app;
+      checks.${system}.tests = build.tests;
     };
 }
 ```
 
-`packages.<id>` is named after the project: the root project's name for
-the root project, and the project path with `-` for `:` otherwise
-(`:libs:core` is `libs-core`).
+The result of `buildGradleProject` has these attributes:
 
-The lockfile names every output of every project, so Nix knows each one
-by name before anything is built:
-
-- **Programs** go to `bin/` of `out`. A project with the `application`
-  plugin installs its distribution (`bin/` and `lib/`), with the start
-  script set to run on the build's JDK, and a Kotlin/Native project its
-  release executables. `nix run` runs the program.
-- **Archives** that `assemble` makes (the jar, a sources jar, Spring
-  Boot's `bootJar`, a shadow jar, `distZip`) go to `share/archives/` of
-  `out`, named without the project's version: `app.jar`, `app-plain.jar`.
-  `packages.<id>.archives."<key>"` is the path of one.
-- **Maven publications** go to the `maven` output, in Maven layout. The
-  package links each artifact, without the project's version, at
+- `packages.<id>` holds a package per project, named after the project:
+  the name of the root project for the root project, and the project path
+  with `-` for `:` otherwise (`:libs:core` is `libs-core`). Programs go
+  to `bin/` of `out`: the distribution of the `application` plugin, with
+  its start script set to run on the JDK of the build, and the release
+  executables of Kotlin/Native. The archives that `assemble` makes go to
+  `share/archives/` of `out`, named without the version of the project,
+  and `packages.<id>.archives."<key>"` is the path of one. Maven
+  publications go to the `maven` output, in Maven layout, with each
+  artifact linked without the version at
   `nix-support/artifacts/<publication>/<artifactId>[-<classifier>].<ext>`,
-  with the POM at `…/descriptor` and the Gradle module metadata at
-  `…/module`. `packages.<id>.artifacts.<publication>."<key>"` is the path
-  of one.
+  and `packages.<id>.artifacts.<publication>."<key>"` is the path of one.
+- `tests` runs the `check` task of every project in the sandbox.
+- `release` holds the Maven output of every project with publications,
+  which `gradle-purifier publish` uploads.
+- `fetches` lists the downloads of the build as entries of the
+  nix-purifiers library, for SBOM, license and vulnerability tools.
 
-`nix/lib/build-gradle-project.nix` documents the builder's arguments:
+The builder takes these arguments besides `pkgs` and `src`:
 
+- `lockFile` is the lockfile; the default is `gradle-purifier.lock.json`
+  in `src`. A build kept external passes a lockfile from outside `src`,
+  and `src` then needs only the files of Gradle.
+- `fetchers` replaces the fetchers of the nix-purifiers library, such as
+  a `fetchurl` that sends credentials to a company repository.
 - `jdk` is the JDK that runs Gradle and the applications. The default is
-  the headless JDK of the major version the lock was made with.
+  the headless JDK of nixpkgs of the Java major version the lock was made
+  with.
 - `toolchainJdks` lists the JDKs for Java toolchains that ask for another
   Java version. Gradle provisions no toolchain in the sandbox.
-- `doCheck` runs each project's `check`.
-- `fetchurl` replaces the fetcher, for credentials or mirrors.
+- `doCheck` runs the `check` task of each project in its package build.
 - `srcFilter` filters the build root before it is copied into the store.
 
-### Interactive mode
+`lib.gradle-purifier.readLock { src, lockFile }` reads the lock into the
+shape that every purifier shares: `entries`, `outputs` and `problems`.
+
+## Everyday loop
+
+After each lock, run `prefetch` at the build root:
 
 ```zsh
-nix run github:nix-purifiers/gradle-purifier -- build
+nix run github:nix-purifiers/gradle-purifier -- prefetch
 ```
 
-With a current lockfile, the command fetches the locked downloads through
-Nix (one GC root, in `.gradle/purifier`), links them into
-`.gradle/purifier/repository`, and runs the lock's Gradle with `--offline`,
-every repository pointing into that tree. It runs on nixpkgs' JDK of the
-Java major version of the lock, whatever `JAVA_HOME` names;
-`GRADLE_PURIFIER_JAVA_HOME` names another. Gradle reads the files where
-they are, so its own download cache stays empty. When the lockfile is
-missing, has another format, or was made from another build definition,
-the command says so and runs `./gradlew` instead.
-
-### IDEs
-
-An IDE imports a Gradle build with its own Gradle run, through the Gradle
-tooling API: IntelliJ IDEA, and Eclipse and VS Code through Buildship and
-jdtls. To have those runs read the locked downloads too, run this at the
-build root:
+It realizes in the Nix store the locked downloads, the JDK, the Gradle
+distribution of the wrapper and, for a Kotlin/Native build, the patched
+toolchain. Their garbage-collector roots go in `.gradle-purifier/` beside
+the lockfile. It also installs an init script in the `init.d` directory
+of the Gradle user home, which Gradle applies to every build. For the
+builds of this root, the script points every repository at the locked
+downloads. It leaves every other build alone. After that, the build tool
+works as usual:
 
 ```zsh
-nix run github:nix-purifiers/gradle-purifier -- ide
+./gradlew build
 ```
 
-It realizes the lockfile, writes `.gradle/purifier/ide.properties`, and
-installs an init script in the `init.d` of the Gradle user home, which
-every Gradle build applies. The script points the builds of this root at
-the locked downloads, and leaves every other build alone. The lock run
-resolves the sources and the javadoc of every library, so an IDE that
-attaches them finds them in the lock. For an import with no download at
-all, set the IDE to the local Gradle distribution at
-`.gradle/purifier/gradle`, which the command links; otherwise the IDE
-downloads the wrapper's distribution once. Run `gradle-purifier ide` again
-after each lock; until then the script says so and the IDE resolves the
-usual way.
+`prefetch` links the distribution where `./gradlew` looks for it, so the
+wrapper downloads nothing. Gradle reads the locked files where they are,
+so its own download cache stays empty. A build that needs a download the
+lockfile does not hold fails, and the init script names
+`gradle-purifier lock`. When the lockfile changed since the last
+prefetch, the init script says so and the build resolves the usual way
+until `prefetch` runs again. `prefetch` warns when `JAVA_HOME` names
+another Java major version than the lock, and prints the JDK to use.
+
+These are the commands:
+
+- `gradle-purifier lock` runs Gradle and records the downloads. It makes
+  the lock again only when the build definition changed: the settings and
+  build scripts, `gradle.properties`, the version catalogs, the wrapper
+  properties, Gradle's own lockfiles, and the files of `buildSrc` and of
+  included builds. `--relock` makes it again regardless. A dynamic
+  version, such as `3.17.+`, resolves as it did in the last lock, from
+  the version listings that the lockfile holds. A relock of an unchanged
+  build reproduces the lockfile byte for byte. The lock runs Gradle on
+  `JAVA_HOME`, on nixpkgs' JDK of a major version with `--java 17`, or
+  else on the JDK 21 of the command. Gradle arguments after `--` go into
+  the lockfile and into every Gradle run of the lock.
+- `gradle-purifier update [<group>:<artifact>...]` locks again with the
+  newest versions that the dynamic versions allow, for every package or
+  for the packages named (`group:*` names a whole group). In a build that
+  uses Gradle's dependency locking, it runs Gradle with `--write-locks`,
+  or `--update-locks` for the packages named, and writes Gradle's
+  lockfiles back into the build.
+- `gradle-purifier prefetch` prepares the everyday loop, as above.
+- `gradle-purifier publish` uploads the `release` that Nix built (see
+  below).
+
+For a build kept external, each command takes `--lockfile <path>`, or the
+environment variable `GRADLE_PURIFIER_LOCKFILE`. The dev shell of the
+flake that passes `lockFile` to the builder can set the variable to the
+same path.
 
 ### Publishing
 
@@ -199,74 +148,118 @@ usual way.
 nix run github:nix-purifiers/gradle-purifier -- publish
 ```
 
-The command builds the package of every publishing project with Nix, from
-the lockfile, then runs Gradle's `publish` (or the tasks given after
-`publish`) with every Maven publication's artifacts and module metadata
-replaced by the files Nix built. The build's own publishing repositories
-and credentials apply, and nothing is compiled outside the sandbox. Gradle
-generates the POM from the build, as it does for any publish.
+The command builds the `release` with Nix, from the lockfile, then runs
+the `publish` task of Gradle (or the tasks given after `publish`) with the
+artifacts and the Gradle module metadata of every Maven publication
+replaced by the files Nix built. The publishing repositories and
+credentials of the build apply, and nothing is compiled outside the
+sandbox. Gradle generates the POM from the build, as it does for any
+publish.
 
-## Kotlin
+## Offline work
 
-Kotlin JVM projects and Kotlin Multiplatform projects with JVM targets
-build like Java projects: the Kotlin Gradle plugin, the compiler and the
-standard library resolve through the build's repositories, and the lock
-records them. The lock run and the sandbox compile in-process
-(`kotlin.compiler.execution.strategy=in-process`), and `java.io.tmpdir`
-points at the temporary directory of the build, where the compiler writes
-its session files. A `jvmToolchain(…)` for the JDK the build runs on
-needs nothing more; another version needs that JDK in `toolchainJdks`.
+After `prefetch`, `./gradlew`, a Gradle on the `PATH` and an IDE build
+with the network cut off. The `conformance-offline` CI job checks this on
+each fixture: it builds, tests and runs each one in a network namespace
+without a network, and checks that Gradle downloaded nothing.
 
-### Kotlin/Native
+## Editor
 
-Kotlin/Native targets build too, with tests and executables. Kotlin/Native
-downloads its toolchain (LLVM, a GCC toolchain with a glibc sysroot,
-libffi) from download.jetbrains.com with its own downloader rather than
-through Gradle's repositories. In the lock run, the recorder gives that
-downloader an HTTPS tunnel to JetBrains' download hosts only, and the
-command records each archive the downloader names in the build's output.
-The lockfile lists them as `konanDependencies`.
+An IDE imports a Gradle build with its own Gradle run, through the Gradle
+tooling API: IntelliJ IDEA, and Eclipse and VS Code through Buildship and
+jdtls. The init script that `prefetch` installs applies to those runs too,
+so the import reads the locked downloads. The lock run resolves the
+sources and the javadoc of every library, so an IDE that attaches them
+finds them in the lock. An IDE set to use the Gradle wrapper finds the
+distribution that `prefetch` linked. One set to a local distribution can
+use `.gradle-purifier/distribution` beside the lockfile.
 
-In the sandbox, `buildGradleProject` unpacks those archives and patches
-their programs with `autoPatchelf`, so they run on nixpkgs' loader and
-libraries, and gives them to Kotlin/Native as already extracted. The
-programs Kotlin/Native links name nixpkgs' dynamic linker
-(`-Xoverride-konan-properties=dynamicLinker…`), so native tests run in
-the sandbox and a release executable of a project is in its package's
-`bin/`, without its `.kexe` suffix. The interactive mode uses the same
-patched toolchain.
+## Errors and fixes
 
-Three things to know:
+Every problem with a lockfile fails in the command and at Nix evaluation,
+with a message that names the fix.
 
-- **Lock on JDK 17.** Kotlin/Native's compiler 2.2 crashes the JVM on JDK
-  21. Lock with `gradle-purifier lock --java 17`; the builds of the lock
-  then run on JDK 17 too.
-- **One host.** A Kotlin/Native toolchain runs on the machine it was made
-  for, so the lockfile records the host (`konanHost`), and the builder
-  refuses a lock made for another.
-- **NixOS.** The lock run executes the toolchain as downloaded, before
-  anything can patch it, so on NixOS it needs a conventional dynamic
-  loader, such as [nix-ld](https://github.com/nix-community/nix-ld)
-  provides.
+| Problem | Message | Fix |
+| --- | --- | --- |
+| The build definition changed since the lock | "the build definition … changed since … was made" | `gradle-purifier lock` |
+| The lockfile was edited by hand | "does not match its contentHash, so it was edited" | `gradle-purifier lock --relock`, or restore it from version control |
+| The lockfile is not JSON, has another format version or lacks a field | "not valid JSON", "has lock format version …", "lacks a field" | `gradle-purifier lock --relock` |
+| A download does not match its hash | Nix reports a hash mismatch | restore the lockfile, or `gradle-purifier lock --relock` if the remote changed the file |
+| The build needs a file the lockfile does not hold | "the build needs a file that … does not hold" | `gradle-purifier lock --relock` |
+| A dynamic version asks for a version the lock never saw | "a dynamic version asks for a version that the version listings of the lockfile do not have" | `gradle-purifier update <group>:<artifact>` |
+| The lockfile changed since the last prefetch | "changed since 'gradle-purifier prefetch' ran" | `gradle-purifier prefetch` |
 
-## Limitations
+## Sources supported and refused
 
-- **Kotlin/JS targets are not supported yet.** Kotlin/JS fetches Node.js
-  and Yarn through Ivy repositories, which the lock records, but Yarn then
-  installs npm packages from the npm registry itself, outside Gradle, and
-  the prebuilt Node.js binary expects a conventional `/lib64` dynamic
-  loader, which the Nix sandbox does not have. In a lock run a Kotlin/JS
-  target fails at Yarn's first download.
-- **Credentials.** The lock run sends a repository's `Authorization`
-  header on to it, so a lock can be made from a repository that needs
-  credentials. The Nix build downloads with the built-in fetcher, which
-  has none; such a build needs a `fetchurl` that supplies them.
+The lock records every download through Gradle's repositories: Maven and
+Ivy repositories of settings scripts, of `pluginManagement`, of
+`dependencyResolutionManagement`, of buildscripts and of projects, in the
+root build, in `buildSrc` and in included builds, and the Gradle plugin
+portal. To do that, the lock run copies the build to
+`.gradle-purifier/lock-run` and runs it through an init script that points
+every repository at a recorder on the loopback address, which fetches
+each file and records its URL and hash. The lock run builds, tests and
+publishes (into a scratch directory) every project, and resolves every
+resolvable configuration with sources and javadoc, so the lockfile holds
+what any package build or editor needs.
+
+Some files are recorded in a particular way:
+
+- When Gradle compares a file it holds from one repository with the
+  checksum another repository serves, the recorder fetches the whole
+  file, so every repository's copy is in the lockfile.
+- A `maven-metadata.xml`, which Gradle reads for dynamic versions and
+  snapshots, changes whenever a new version is published, so the
+  lockfile holds its contents.
+- A file of Maven Central gets Google's mirror of Maven Central as a
+  mirror, which Nix tries when Maven Central fails. With
+  `GRADLE_PURIFIER_CENTRAL_MIRROR=1`, the lock run downloads from the
+  mirror. The lockfile names Maven Central either way.
+- Kotlin/Native downloads its toolchain (LLVM, a GCC toolchain with a
+  glibc sysroot, libffi) from download.jetbrains.com with its own
+  downloader. The recorder gives that downloader an HTTPS tunnel to the
+  download hosts of JetBrains only, and the command records each archive
+  the downloader names. In the sandbox, the builder unpacks the archives,
+  patches their programs with `autoPatchelf`, and links programs with the
+  dynamic linker of nixpkgs. A toolchain runs on the machine it was made
+  for, so the lockfile records the host, and its entries are needed on
+  that system only. Kotlin/Native 2.2 crashes the JVM on JDK 21, so lock
+  such a build with `--java 17`. On NixOS, the lock run needs a
+  conventional dynamic loader, such as
+  [nix-ld](https://github.com/nix-community/nix-ld) provides, because it
+  runs the toolchain before anything can patch it.
+
+The lock refuses these:
+
+- **Downloads outside the repositories.** Gradle's own HTTP client gets a
+  proxy that refuses every connection, so a plugin that downloads with
+  its own client fails in the lock run rather than later in the sandbox.
+  The file needs a repository that the build declares.
+- **Kotlin/JS targets.** Yarn installs npm packages from the npm registry
+  outside Gradle, so a Kotlin/JS target fails at its first download.
 - **The configuration cache** is off in the lock run and in the sandbox,
-  because the init script's tasks read the project model.
-- **Downloads in tasks.** A plugin that downloads with its own HTTP
-  client, outside Gradle's repositories, fails in the lock run (the proxy
-  refuses it). The file needs a repository the build declares.
+  because the tasks of the init script read the project model.
 
-## Development
+A lock run sends the `Authorization` header of a repository on to it, so
+a lock can be made from a repository that needs credentials. The Nix
+build then needs a `fetchers.fetchurl` that supplies them.
 
+## Real-world projects
+
+The fixtures in `tests/fixtures/` cover a Java library in the Groovy DSL
+with a dynamic version, an included build and an Ivy repository; a Kotlin
+build with a version catalog, a convention plugin in `buildSrc`, a
+Multiplatform library and an application; and a Kotlin/Native
+executable. Each builds in the sandbox on x86_64-linux and
+aarch64-linux, except the Kotlin/Native one, which builds on
+x86_64-linux. A fourth fixture, with Gradle's dependency locking, is the
+subject of the `conformance-update` CI job.
+
+## Credits
+
+The design follows
+[sbt-purifier](https://github.com/nix-purifiers/sbt-purifier), which took
+its model from nixcloud's [cargo (libnix)](https://github.com/nixcloud/cargo):
+the build tool resolves, a lockfile records each download by URL and
+hash, and Nix builds from the lockfile in the sandbox.
 `docs/development/` holds the design, the tests and the commands.

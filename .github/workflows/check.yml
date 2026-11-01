@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: MIT
 #
-# Runs every flake check on pushes to main and on pull requests, on
-# x86_64-linux and on aarch64-linux: the command, the unit tests, the Nix
-# library's checks, and the sandboxed build of every test fixture from its
-# lockfile. It then evaluates the checks for every system the flake
-# supports, and runs the interactive-mode tests, which need Nix outside
-# the sandbox.
+# Runs on pushes to main and on pull requests, on x86_64-linux and on
+# aarch64-linux. The `check` job runs every flake check (the command, the
+# unit tests, the sandboxed conformance checks, and the build of every
+# test fixture from its lockfile) and evaluates the checks for every
+# system the flake supports. The conformance checks that need the network
+# or Nix outside the sandbox are jobs of the same name.
 name: check
 
 on:
@@ -31,5 +31,78 @@ jobs:
         run: nix flake check --max-jobs 2 --print-build-logs
       - name: Evaluation for every system
         run: nix flake check --all-systems --no-build
-      - name: Interactive mode
-        run: tests/interactive.sh
+
+  # Relocking every fixture reproduces its lockfile byte for byte.
+  conformance-relock:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Relock the fixtures
+        run: tests/relock-fixtures.sh --relock
+      - name: Compare with the committed lockfiles
+        run: git diff --exit-code -- tests/fixtures
+
+  # Building a fixture again gives the same output.
+  conformance-rebuild:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Build and rebuild the fixtures
+        run: |
+          system=$(nix eval --impure --raw --expr builtins.currentSystem)
+          packages=(
+            ".#checks.$system.java-library"
+            ".#checks.$system.kotlin-core"
+            ".#checks.$system.kotlin-shared"
+            ".#checks.$system.kotlin-app"
+          )
+          nix build --no-link --max-jobs 2 "${packages[@]}"
+          nix build --no-link --rebuild "${packages[@]}"
+
+  # After `prefetch`, ./gradlew builds each fixture with the network cut
+  # off, and the command reports each mistake in a lockfile.
+  conformance-offline:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      # Ubuntu lets no unprivileged user make a network namespace unless
+      # AppArmor allows it; the test cuts the network in one.
+      - name: Allow user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Offline builds
+        run: tests/offline.sh
+
+  # `update` moves a fixture that pins an old version, and both lockfiles
+  # then pass the stale check.
+  conformance-update:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Update
+        env:
+          GRADLE_PURIFIER_CENTRAL_MIRROR: "1"
+        run: tests/update.sh

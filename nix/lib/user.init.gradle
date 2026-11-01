@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: MIT
+//
+// The everyday init script of gradle-purifier. `gradle-purifier prefetch`
+// installs it in the Gradle user home's init.d, where Gradle applies it to
+// every build: ./gradlew, a Gradle on the PATH, and the builds an IDE runs
+// through the Gradle tooling API to import a project.
+//
+// In a build where `gradle-purifier prefetch` has realized the lockfile,
+// it applies gradle-purifier's init script in interactive mode, so the
+// build reads the locked downloads. `prefetch` writes what it needs to
+// .gradle/purifier/prefetch.properties at the build root: the plugin portal
+// within the tree of locked downloads, the init script, the SHA-256 of
+// the lockfile it realized, and the settings of the init script by their
+// keys (the tree of locked downloads, and the Kotlin/Native toolchain). In
+// any other build, and in a build the gradle-purifier command runs itself,
+// it does nothing.
+
+def portalKey = 'org.gradle.internal.plugins.portal.url.override'
+
+// A daemon runs many builds; what this script set for an earlier one goes.
+def keys = [
+    'gradle.purifier.mode',
+    'gradle.purifier.repository',
+    'gradle.purifier.konan.properties',
+    'gradle.purifier.konan.data.dir',
+]
+if (System.getProperty('gradle.purifier.ide') != null) {
+    (keys + ['gradle.purifier.ide', portalKey]).each {
+        System.clearProperty(it)
+    }
+}
+if (System.getenv('GRADLE_PURIFIER_MODE')) {
+    return
+}
+
+def dir = gradle.startParameter.projectDir ?: gradle.startParameter.currentDir
+while (dir != null && !new File(dir, 'settings.gradle').isFile() && !new File(dir, 'settings.gradle.kts').isFile()) {
+    dir = dir.parentFile
+}
+if (dir == null) {
+    return
+}
+def properties = new File(dir, '.gradle/purifier/prefetch.properties')
+if (!properties.isFile()) {
+    return
+}
+def p = new Properties()
+properties.withInputStream { p.load(it) }
+// The lockfile may lie outside the build (an external build), so
+// prefetch.properties names it.
+def lockfile = new File(p.getProperty('lockFile'))
+if (!lockfile.isFile()) {
+    return
+}
+def sha256 = java.security.MessageDigest.getInstance('SHA-256').digest(lockfile.bytes).encodeHex().toString()
+if (p.getProperty('lockSha256') != sha256) {
+    println "gradle-purifier: ${lockfile} changed since 'gradle-purifier prefetch' ran; run 'gradle-purifier prefetch' again, so this build reads the locked downloads. It resolves the usual way now."
+    return
+}
+
+System.setProperty('gradle.purifier.ide', '1')
+System.setProperty('gradle.purifier.mode', 'interactive')
+System.setProperty(portalKey, p.getProperty('portal'))
+// prefetch.properties names each setting of the init script by its key.
+keys.each { key ->
+    def value = p.getProperty(key)
+    if (value != null) {
+        System.setProperty(key, value)
+    }
+}
+apply from: p.getProperty('initScript')

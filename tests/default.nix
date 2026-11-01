@@ -1,24 +1,27 @@
 # SPDX-License-Identifier: MIT
 #
 # The flake's checks. Every one builds in the sandbox; the only network
-# access is the fixed-output fetches of locked artifacts.
+# access is the fixed-output fetches of locked artifacts. The conformance
+# checks that need the network (relock, rebuild, offline and update) are
+# CI jobs of the same name (.github/workflows/check.yml).
 {
   pkgs,
-  # The flake's default package overlay, which adds buildGradleProject.
-  overlay,
+  # The library namespace of the flake: lib.gradle-purifier, with
+  # buildGradleProject and readLock.
+  gradlePurifier,
   gradle-purifier,
 }:
 let
   inherit (pkgs) lib runCommand;
+  inherit (gradlePurifier) buildGradleProject readLock;
 
   # Every fixture builds the way a consumer's package does: through
-  # buildGradleProject of a package set the overlay applies to.
-  withOverlay = pkgs.extend overlay;
-  inherit (withOverlay) buildGradleProject;
+  # lib.gradle-purifier.buildGradleProject of a package set.
+  build = args: buildGradleProject ({ inherit pkgs; } // args);
 
   # A Java library in the Groovy DSL on Gradle 8, with a Maven publication
   # that carries a sources jar, and JUnit tests that run in the build.
-  javaLibrary = buildGradleProject {
+  javaLibrary = build {
     src = ./fixtures/java-library;
     doCheck = true;
   };
@@ -27,14 +30,14 @@ let
   # convention plugin in buildSrc that applies the Kotlin JVM plugin with a
   # Java 21 toolchain, a published library with kotlinx-coroutines and
   # tests, and an application that uses it.
-  kotlinApp = buildGradleProject {
+  kotlinApp = build {
     src = ./fixtures/kotlin-app;
     doCheck = true;
   };
 
   # A Kotlin/Native build with a linuxX64 library, its tests, and an
   # executable. Its lock holds the Kotlin/Native toolchain of x86_64-linux.
-  kotlinNative = buildGradleProject {
+  kotlinNative = build {
     src = ./fixtures/kotlin-native;
     doCheck = true;
   };
@@ -59,11 +62,50 @@ let
       unzip -l ${jar} | grep -q ' ${class}$' || { echo "${jar} holds no ${class}" >&2; exit 1; }
       touch $out
     '';
+
+  # The lockfiles of the conformance checks, each the lockfile of the Java
+  # library fixture with one change (tests/conformance/lockfiles.nix). The
+  # checks read the committed copies, since `nix flake check --no-build`
+  # cannot read a file that evaluation writes to the store.
+  conformanceLock =
+    name:
+    let
+      file = ./conformance + "/${name}.lock.json";
+      expected = (import ./conformance/lockfiles.nix { inherit lib; }).${name};
+    in
+    assert lib.assertMsg (lib.importJSON file == expected)
+      "tests/conformance/${name}.lock.json differs from tests/conformance/lockfiles.nix; run tests/conformance/generate.sh";
+    file;
+
+  # A check that `lockFile` fails at evaluation, in readLock and in the
+  # builder, with a problem that matches the regular expression `expected`.
+  expectProblem =
+    name: lockFile: expected:
+    let
+      problems =
+        (readLock {
+          src = ./fixtures/java-library;
+          inherit lockFile;
+        }).problems;
+      built =
+        builtins.tryEval
+          (build {
+            src = ./fixtures/java-library;
+            inherit lockFile;
+          }).packages.greeting.drvPath;
+    in
+    assert lib.assertMsg (lib.any (p: builtins.match expected p != null) problems)
+      "${name}: readLock gave the problems ${builtins.toJSON problems}, none of which matches ${expected}";
+    assert lib.assertMsg (!built.success) "${name}: the builder accepted the lockfile";
+    runCommand name { } ''
+      echo ${lib.escapeShellArg (lib.concatStringsSep "\n" problems)} >$out
+    '';
 in
 {
   inherit gradle-purifier;
 
   java-library = javaLibrary.packages.greeting;
+  java-library-tests = javaLibrary.tests;
   # The archives of `assemble` are in `out`, under their version-free keys.
   java-library-archives = expectFiles "java-library-archives" javaLibrary.packages.greeting [
     "share/archives/greeting.jar"
@@ -75,6 +117,10 @@ in
     "nix-support/artifacts/maven/descriptor"
     "nix-support/artifacts/maven/module"
     "example/greeting/1.0.0/greeting-1.0.0.jar"
+  ];
+  # The release is the Maven output of each project with publications.
+  java-library-release = expectFiles "java-library-release" javaLibrary.release [
+    "greeting/example/greeting/1.0.0/greeting-1.0.0.pom"
   ];
   java-library-classes =
     expectClass "java-library-classes" javaLibrary.packages.greeting.artifacts.maven."greeting.jar"
@@ -115,6 +161,65 @@ in
     touch $out
   '';
 
+  # A lockfile made for an older build definition fails, naming the lock.
+  conformance-stale =
+    expectProblem "conformance-stale" (conformanceLock "stale")
+      ".*changed since.*run 'gradle-purifier lock'.*";
+
+  # A lockfile whose download hash was changed by hand fails, because its
+  # content no longer matches its contentHash.
+  conformance-tampered =
+    expectProblem "conformance-tampered" (conformanceLock "tampered")
+      ".*does not match its contentHash.*gradle-purifier lock --relock.*";
+
+  # A lockfile of another format version, or one with a field missing,
+  # fails, naming the lock. tests/interactive.sh covers a lockfile that is
+  # not JSON, which fails Nix evaluation before any check can catch it.
+  conformance-malformed = runCommand "conformance-malformed" { } ''
+    cat ${
+      expectProblem "conformance-malformed-version" (conformanceLock "version")
+        ".*lock format version 0.*gradle-purifier lock --relock.*"
+    } ${
+      expectProblem "conformance-malformed-field" (conformanceLock "field")
+        ".*lacks a field.*gradle-purifier lock --relock.*"
+    } >$out
+  '';
+
+  # A lockfile without a download the build needs passes evaluation and
+  # fails the build, which names the lock.
+  conformance-missing =
+    let
+      lockFile = conformanceLock "missing";
+      failure =
+        pkgs.testers.testBuildFailure
+          (build {
+            src = ./fixtures/java-library;
+            inherit lockFile;
+          }).packages.greeting;
+    in
+    runCommand "conformance-missing" { } ''
+      grep -F "does not hold" ${failure}/testBuildFailure.log
+      grep -F "run 'gradle-purifier lock --relock'" ${failure}/testBuildFailure.log
+      touch $out
+    '';
+
+  # A build whose `src` holds only Gradle's own files builds from a
+  # lockfile outside it.
+  conformance-external =
+    let
+      external = build {
+        src = builtins.path {
+          name = "java-library";
+          path = ./fixtures/java-library;
+          filter = path: _: baseNameOf path != "gradle-purifier.lock.json";
+        };
+        lockFile = ./fixtures/java-library/gradle-purifier.lock.json;
+      };
+    in
+    expectFiles "conformance-external" external.packages.greeting.maven [
+      "example/greeting/1.0.0/greeting-1.0.0.jar"
+    ];
+
   # The recorder's mapping between request paths, remote URLs and paths in
   # the tree of locked downloads (tests/RecorderTest.java).
   recorder-unit =
@@ -135,24 +240,6 @@ in
     bash ${./cli-unit.sh} ${lib.getExe gradle-purifier}
     touch $out
   '';
-
-  # lock.nix reads only the format version it knows.
-  nix-library-version =
-    let
-      result = builtins.tryEval (
-        (import ../nix/lib/lock.nix {
-          lockFile = builtins.toFile "lock.json" (
-            builtins.toJSON {
-              version = 0;
-              projects = [ ];
-              artifacts = [ ];
-            }
-          );
-        }).version
-      );
-    in
-    assert !result.success;
-    runCommand "nix-library-version" { } "touch $out";
 }
 # The Kotlin/Native fixture's lock holds the toolchain of x86_64-linux,
 # so its checks build there.

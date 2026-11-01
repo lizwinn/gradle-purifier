@@ -20,6 +20,12 @@
 //                               konan.properties settings that every
 //                               Kotlin/Native link overrides, such as the
 //                               dynamic linker of the programs it links
+//   GRADLE_PURIFIER_KONAN_DATA_DIR
+//                               the Kotlin/Native data directory, whose
+//                               dependencies hold the locked toolchain; it
+//                               becomes the konan.data.dir property of
+//                               every project, which the Kotlin plugin
+//                               reads in place of KONAN_DATA_DIR
 //
 // A remote repository at https://host/path is read from
 // <base>/https/host/path. The recorder fetches each such URL from its
@@ -38,9 +44,65 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
 import org.gradle.api.tasks.Sync
 
+// After a build that reads the locked downloads, the action
+// PurifierMissingHint names the command that records a download the build
+// needed and the lockfile does not hold. Gradle runs it once the build has
+// finished (the dataflow actions of Gradle 8.1 and later).
+abstract class PurifierMissingHint implements org.gradle.api.flow.FlowAction<Parameters> {
+    interface Parameters extends org.gradle.api.flow.FlowParameters {
+        @org.gradle.api.tasks.Input
+        org.gradle.api.provider.Property<Boolean> getMissing()
+    }
+
+    @Override
+    void execute(Parameters parameters) {
+        if (parameters.missing.get()) {
+            System.err.println("gradle-purifier: the build needs a download that the lockfile does not hold (Gradle names it above); run 'gradle-purifier lock', then 'gradle-purifier prefetch'.")
+        }
+    }
+
+    // Whether a failure, or one of its causes, is a dependency Gradle could
+    // not resolve.
+    static boolean isMissing(Throwable failure) {
+        def seen = [] as Set
+        def pending = [failure]
+        while (!pending.isEmpty()) {
+            def t = pending.remove(0)
+            if (t == null || !seen.add(t)) {
+                continue
+            }
+            def message = t.message ?: ''
+            if (message.contains('Could not find') || message.contains('Could not resolve')) {
+                return true
+            }
+            pending.add(t.cause)
+            if (t.metaClass.respondsTo(t, 'getCauses')) {
+                pending.addAll(t.causes)
+            }
+        }
+        false
+    }
+}
+
+abstract class PurifierMissingHintPlugin implements Plugin<Settings> {
+    @javax.inject.Inject
+    abstract org.gradle.api.flow.FlowScope getFlowScope()
+
+    @javax.inject.Inject
+    abstract org.gradle.api.flow.FlowProviders getFlowProviders()
+
+    void apply(Settings settings) {
+        flowScope.always(PurifierMissingHint) { spec ->
+            spec.parameters.missing.set(flowProviders.buildWorkResult.map { result ->
+                result.failure.map { PurifierMissingHint.isMissing(it) }.orElse(false)
+            })
+        }
+    }
+}
+
 // A setting comes from the environment, or else from the system property
 // of the same name in lower case with dots (gradle.purifier.mode), which
-// the IDE init script (ide.init.gradle) sets.
+// the everyday init script (user.init.gradle) sets.
 def setting = { String name ->
     System.getenv(name) ?: System.getProperty(name.toLowerCase().replace('_', '.'))
 }
@@ -52,12 +114,19 @@ if (mode == null || mode.isEmpty()) {
 if (!(mode in ['lock', 'sandbox', 'interactive', 'publish'])) {
     throw new GradleException("gradle-purifier: GRADLE_PURIFIER_MODE is '${mode}'; it must be lock, sandbox, interactive or publish")
 }
+
+if (mode == 'interactive' && gradle.parent == null) {
+    gradle.beforeSettings { settings ->
+        settings.plugins.apply(PurifierMissingHintPlugin)
+    }
+}
 def base = setting('GRADLE_PURIFIER_REPOSITORY')
 if (base == null || base.isEmpty()) {
     throw new GradleException('gradle-purifier: GRADLE_PURIFIER_MODE is set but GRADLE_PURIFIER_REPOSITORY is not')
 }
 def output = System.getenv('GRADLE_PURIFIER_OUTPUT')
-def konanProperties = System.getenv('GRADLE_PURIFIER_KONAN_PROPERTIES')
+def konanProperties = setting('GRADLE_PURIFIER_KONAN_PROPERTIES')
+def konanDataDir = setting('GRADLE_PURIFIER_KONAN_DATA_DIR')
 def runCheck = System.getenv('GRADLE_PURIFIER_CHECK') == '1'
 def rootBuild = gradle.parent == null
 
@@ -145,6 +214,10 @@ allprojects { project ->
     project.buildscript.repositories.all(purify)
     project.repositories.all(purify)
 
+    if (konanDataDir) {
+        project.extensions.extraProperties.set('konan.data.dir', konanDataDir)
+    }
+
     // Every Kotlin/Native binary, test binaries included, links with the
     // konan.properties overrides.
     if (konanProperties) {
@@ -188,8 +261,11 @@ allprojects { project ->
                 (runCheck && t.name == 'check')
         })
     }
-    // The archives of `assemble` go to archives/, under their keys.
-    project.afterEvaluate {
+    // The archives of `assemble` go to archives/, under their keys. The
+    // Kotlin Multiplatform plugin adds archive tasks to `assemble` after
+    // the init script's afterEvaluate, so the archives are read once every
+    // project is evaluated, when the lock run describes them too.
+    gradle.projectsEvaluated {
         def archives = assembleArchives(project)
         if (!archives.isEmpty()) {
             project.tasks.register('purifierArchives', Sync) { task ->
@@ -361,19 +437,16 @@ if (rootBuild && mode == 'lock') {
                         groupId   : publication.groupId,
                         artifactId: publication.artifactId,
                         artifacts : publication.artifacts.collect { a ->
-                            def classifier = a.classifier ?: null
                             [
-                                key       : "${publication.artifactId}${classifier ? '-' + classifier : ''}.${a.extension}".toString(),
-                                classifier: classifier,
+                                classifier: a.classifier ?: null,
                                 extension : a.extension,
                             ]
-                        }.sort { it.key },
+                        }.sort { "${it.classifier ?: ''}.${it.extension}".toString() },
                     ]
                 }
             }
             def application = project.extensions.findByName('application')
             [
-                id          : idOf(project),
                 path        : project.path,
                 publications: publications.sort { it.name },
                 application : application == null ? null : [name: application.applicationName],
@@ -386,9 +459,9 @@ if (rootBuild && mode == 'lock') {
         def file = new File(output, 'projects.json')
         file.parentFile.mkdirs()
         file.text = JsonOutput.prettyPrint(JsonOutput.toJson([
-            gradleVersion: g.gradleVersion,
-            javaVersion  : System.getProperty('java.version'),
-            projects     : projects.sort { it.id },
+            javaMajor      : Runtime.version().feature(),
+            rootProjectName: g.rootProject.name,
+            projects       : projects.sort { it.path },
         ]))
     }
 }

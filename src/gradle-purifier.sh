@@ -4,18 +4,23 @@
 # names and runs it as a writeShellApplication, which sets errexit,
 # nounset and pipefail.
 #
-#   gradle-purifier lock [--relock] [-- <gradle arguments>]
-#       writes gradle-purifier.lock.json at the root of the build in the
-#       current directory
-#   gradle-purifier publish [<gradle arguments>]
+#   gradle-purifier lock [--relock] [--java <major>] [--lockfile <path>] [-- <gradle arguments>]
+#       records every download of the build in the lockfile
+#   gradle-purifier update [--java <major>] [--lockfile <path>] [<group>:<artifact>...] [-- <gradle arguments>]
+#       moves dynamic versions, and Gradle's own lockfiles, to the newest
+#       versions, then records the downloads as lock does
+#   gradle-purifier prefetch [--lockfile <path>]
+#       realizes the locked downloads, the JDK, the Gradle distribution and
+#       the Kotlin/Native toolchain, and installs the init script that makes
+#       ./gradlew, a Gradle on the PATH and an IDE read them, offline
+#   gradle-purifier publish [--lockfile <path>] [<gradle arguments>]
 #       publishes what Nix built from the lockfile, through the build's
 #       own publish tasks
-#   gradle-purifier <gradle arguments>
-#       runs Gradle on the locked downloads, offline, when the lockfile is
-#       current; otherwise it runs ./gradlew
 #
-# The command runs the Gradle distribution that
-# gradle/wrapper/gradle-wrapper.properties names, as ./gradlew would.
+# Each command runs at the root of a Gradle build. The lockfile is
+# gradle-purifier.lock.json there, or the path that --lockfile or
+# GRADLE_PURIFIER_LOCKFILE names, for a build kept external. The GC roots
+# lie beside the lockfile, in .gradle-purifier.
 
 # A failure inside $(…) stops the command too.
 shopt -s inherit_errexit
@@ -24,15 +29,13 @@ lib=@lib@
 recorder=@recorder@
 default_java=@java@
 lock_version=@lockVersion@
-# The nixpkgs whose package set `publish` builds the packages with, and
-# the Kotlin/Native toolchain of the interactive mode.
+# The nixpkgs and the nix-purifiers library the command builds with.
 nixpkgs=@nixpkgs@
-# What Kotlin/Native's JNI libraries need, and the dynamic linker the
-# programs it links name, from that package set.
-konan_library_path=@konanLibraryPath@
+purifier_source=@purifier@
+# The dynamic linker the programs Kotlin/Native links name, from that
+# package set.
 dynamic_linker=@dynamicLinker@
 
-lockfile=gradle-purifier.lock.json
 portal=https/plugins.gradle.org/m2
 # The hosts Kotlin/Native downloads its toolchain from: its
 # dependenciesUrl, and the CDN that redirects to.
@@ -46,43 +49,73 @@ die() {
 usage() {
   cat <<'EOF'
 Usage:
-  gradle-purifier lock [--relock] [--java <major>] [-- <gradle arguments>]
-      Writes gradle-purifier.lock.json: every file the build downloads,
-      by URL and hash, and the projects the Nix builder makes packages of.
-      The lock is renewed only when the build definition changed, unless
-      --relock is given. Gradle runs on JAVA_HOME, on nixpkgs' JDK of the
-      major version --java names, or on the command's JDK 21. The gradle
-      arguments are recorded in the lock and passed to every Gradle run of
-      the lock.
-  gradle-purifier publish [<gradle arguments>]
-      Builds every publishing project with Nix from the lockfile, then
-      runs the build's publish tasks (publish, unless gradle arguments
-      name others) with the files Nix built in place of the ones Gradle
-      would make. The build's repositories and credentials apply.
-  gradle-purifier ide
-      Makes the builds an IDE runs through the Gradle tooling API read the
-      locked downloads: realizes the lockfile and installs an init script
-      in the init.d of the Gradle user home. Run it again after each lock.
-  gradle-purifier <gradle arguments>
-      Runs Gradle offline on the locked downloads when the lockfile is
-      current, and ./gradlew otherwise.
+  gradle-purifier lock [--relock] [--java <major>] [--lockfile <path>] [-- <gradle arguments>]
+      Records every file the build downloads, by URL and hash, and the
+      outputs of every project, in gradle-purifier.lock.json. The lock is
+      made again only when the build definition changed, unless --relock
+      is given. Gradle runs on nixpkgs' JDK of the major version --java
+      names, on JAVA_HOME, or on the command's JDK 21. The gradle
+      arguments are recorded and passed to every Gradle run of the lock.
+      A dynamic version, such as 3.17.+, resolves as it did in the lock
+      before, from the version listings the lockfile holds.
+  gradle-purifier update [--java <major>] [--lockfile <path>] [<group>:<artifact>...] [-- <gradle arguments>]
+      Locks again with the newest versions that the dynamic versions of
+      the build allow: of every package, or of the packages named
+      (group:* names every artifact of a group). In a build with Gradle's
+      dependency locking, it runs Gradle with --write-locks, or with
+      --update-locks for the packages named, and writes the Gradle
+      lockfiles back into the build. It keeps the gradle arguments of the
+      lock unless it is given others.
+  gradle-purifier prefetch [--lockfile <path>]
+      Realizes in the Nix store everything the everyday loop and an IDE
+      need: the locked downloads, the JDK, the Gradle distribution (where
+      ./gradlew looks for it) and a Kotlin/Native toolchain. It installs an
+      init script in the init.d of the Gradle user home that makes the
+      builds of this root read them, so ./gradlew build, a Gradle on the
+      PATH and an IDE work with the network cut off. Run it after each
+      lock.
+  gradle-purifier publish [--lockfile <path>] [<gradle arguments>]
+      Builds the release with Nix from the lockfile, and runs the build's
+      publish tasks (publish, unless gradle arguments name others) with the
+      files Nix built in place of the ones Gradle would make.
 
-publish and the runs on the locked downloads use nixpkgs' JDK of the
-Java major version the lock was made with, or the JDK that
-GRADLE_PURIFIER_JAVA_HOME names.
+The lockfile is gradle-purifier.lock.json at the build root, or the path
+--lockfile or GRADLE_PURIFIER_LOCKFILE names.
 EOF
 }
 
+# The build root, the lockfile and the directory of GC roots, set by
+# set_paths.
+root=
+lockfile=
+state=
+
+# Sets root, lockfile and state, from the --lockfile argument $1 (or "").
+set_paths() {
+  if [ ! -f settings.gradle ] && [ ! -f settings.gradle.kts ]; then
+    die "run this at the root of a Gradle build (the directory with settings.gradle or settings.gradle.kts)"
+  fi
+  root=$PWD
+  local given=${1:-${GRADLE_PURIFIER_LOCKFILE:-}}
+  if [ -n "$given" ]; then
+    lockfile=$(realpath -m -- "$given")
+  else
+    lockfile=$root/gradle-purifier.lock.json
+  fi
+  state=$(dirname "$lockfile")/.gradle-purifier
+}
+
 # The home of nixpkgs' headless JDK of the major version $1, built with
-# Nix (GC root in .gradle/purifier).
+# Nix (GC root in the state directory).
 nixpkgs_jdk() {
   local out
-  out=$(nix-build --quiet --out-link "$PWD/.gradle/purifier/jdk-$1" "$nixpkgs" \
+  mkdir -p "$state"
+  out=$(nix-build --quiet --out-link "$state/jdk-$1" "$nixpkgs" \
     -A "javaPackages.compiler.openjdk$1.headless") || die "nixpkgs has no headless OpenJDK $1"
   printf '%s/lib/openjdk' "$out"
 }
 
-# The JDK to run Gradle on: nixpkgs' JDK of the major version $1 when it
+# The JDK to run the lock on: nixpkgs' JDK of the major version $1 when it
 # is given; otherwise JAVA_HOME when it is set, and the command's own JDK
 # when it is not.
 java_home() {
@@ -92,17 +125,6 @@ java_home() {
     echo "$JAVA_HOME"
   else
     echo "$default_java"
-  fi
-}
-
-# The major version of the Java the lockfile was made with.
-locked_java_major() {
-  jq -r '.javaVersion | split(".") | .[0]' "$lockfile"
-}
-
-require_build_root() {
-  if [ ! -f settings.gradle ] && [ ! -f settings.gradle.kts ]; then
-    die "run this at the root of a Gradle build (the directory with settings.gradle or settings.gradle.kts)"
   fi
 }
 
@@ -124,32 +146,20 @@ tree_path() {
   printf '%s/%s' "$scheme" "${url#*://}"
 }
 
-# The build definition: the files whose change means that the lock must
-# be made again. They are every settings and build script,
-# gradle.properties, the version catalogs and the wrapper properties, and
-# every file of buildSrc and of each included build (a directory below the
-# root with a settings script).
-definition_files() {
-  {
-    find . \( -name .git -o -name .gradle -o -name .kotlin -o -name .idea -o -name build -o -name node_modules \) -prune -o \
-      -type f \( -name 'settings.gradle' -o -name 'settings.gradle.kts' -o -name 'build.gradle' -o -name 'build.gradle.kts' \
-      -o -name 'gradle.properties' -o -name '*.versions.toml' -o -name 'gradle-wrapper.properties' -o -name '*.init.gradle' \) -print
-    local dir
-    for dir in ./buildSrc $(find . -mindepth 2 \( -name .git -o -name .gradle -o -name build -o -name node_modules \) -prune -o \
-      -type f \( -name settings.gradle -o -name settings.gradle.kts \) -printf '%h\n'); do
-      [ -d "$dir" ] || continue
-      find "$dir" \( -name .gradle -o -name .kotlin -o -name build \) -prune -o -type f -print
-    done
-  } | sort -u
+# The hash of the build definition at the build root with the gradle
+# arguments of the JSON list $1, as nix/lib/inputs.nix computes it; the
+# builder computes it the same way.
+inputs_hash() {
+  nix-instantiate --eval --strict --json \
+    --expr "{ src, args }: import $lib/inputs.nix { lib = (import $nixpkgs { }).lib; src = /. + src; gradleArguments = builtins.fromJSON args; }" \
+    --argstr src "$root" --argstr args "$1" | jq -r .
 }
 
-inputs_hash() {
-  local files
-  files=$(definition_files)
-  {
-    printf '%s\n' "$*"
-    [ -z "$files" ] || printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 sha256sum
-  } | sha256sum | cut -d ' ' -f 1
+# The contentHash of the lockfile $1: SHA-256 of its JSON without
+# contentHash, with sorted keys and no spaces, as builtins.toJSON writes
+# it; read-lock.nix checks it.
+content_hash() {
+  printf 'sha256:%s' "$(jq -j -S -c 'del(.contentHash)' "$1" | sha256sum | cut -d ' ' -f 1)"
 }
 
 # Unpacks the Gradle distribution zip $1 into the user's cache, once, and
@@ -178,7 +188,7 @@ unpack_distribution() {
 # project.
 copy_build() {
   local target=$1
-  local excludes=(--exclude=/.git --exclude=.gradle --exclude=.kotlin --exclude=.idea --exclude=/result*)
+  local excludes=(--exclude=/.git --exclude=.gradle --exclude=.gradle-purifier --exclude=.kotlin --exclude=.idea --exclude=/result*)
   local script dir
   while IFS= read -r script; do
     dir=$(dirname "${script#./}")
@@ -194,19 +204,14 @@ copy_build() {
 # once it has extracted it. The downloader names every download in the
 # build's output, as "Downloading dependency <url> to <file>". Records
 # each such URL from the Gradle output $1 as a download into the records
-# file $2, fetching it into the store for its hash, and writes the
-# archives' paths in the tree of locked downloads to the file $3, one per
-# line, for the lockfile's konanDependencies.
+# file $2, fetching it into the store for its hash.
 record_konan_dependencies() {
-  local log=$1 records=$2 list=$3
-  : >"$list"
-  local url path hash
+  local log=$1 records=$2
+  local url hash
   while IFS= read -r url; do
     echo "gradle-purifier: fetching $url" >&2
     hash=$(nix --extra-experimental-features nix-command store prefetch-file --json --hash-type sha256 "$url" | jq -r '.hash')
-    path=$(tree_path "$url")
-    printf '%s\t%s\t%s\n' "$path" "$url" "$hash" >>"$records"
-    echo "$path" >>"$list"
+    printf '%s\t%s\t%s\n' "$(tree_path "$url")" "$url" "$hash" >>"$records"
   done < <(konan_download_urls "$log")
 }
 
@@ -217,14 +222,16 @@ konan_download_urls() {
 }
 
 # The lockfile's artifacts, as JSON, from the recorder's records file $1:
-# a file entry for each line with a URL (its optional fourth field is a
-# mirror), an inline entry for each line the recorder marked "inline" (its
-# third field is the contents in Base64), and one entry per path.
+# a file entry { url, hash } for each line with a URL, and an inline entry
+# { path, contents } for each line the recorder marked "inline" (its third
+# field is the contents in Base64); one entry per path, in the order of
+# the paths. Nix derives the path and the mirrors of a file entry from its
+# URL.
 artifacts_json() {
-  jq -R -s 'split("\n") | map(select(length > 0) | split("\t")
-    | if .[1] == "inline" then {path: .[0], contents: (.[2] | @base64d)}
-      else {path: .[0], url: .[1], mirrors: ([.[3] // empty] | map(select(length > 0))), hash: .[2]} end)
-    | unique_by(.path)' "$1"
+  jq -R -s 'split("\n") | map(select(length > 0) | split("\t"))
+    | unique_by(.[0])
+    | map(if .[1] == "inline" then {path: .[0], contents: (.[2] | @base64d)}
+          else {url: .[1], hash: .[2]} end)' "$1"
 }
 
 # The Kotlin/Native name of this machine. A Kotlin/Native toolchain runs
@@ -238,7 +245,7 @@ konan_host() {
 }
 
 lock_command() {
-  local relock='' java_major=''
+  local relock='' java_major='' given=''
   while [ $# -gt 0 ]; do
     case $1 in
       --relock) relock=1; shift ;;
@@ -247,22 +254,132 @@ lock_command() {
         java_major=$2
         shift 2
         ;;
+      --lockfile)
+        [ $# -ge 2 ] || die "--lockfile takes a path"
+        given=$2
+        shift 2
+        ;;
       --) shift; break ;;
       -h | --help) usage; exit 0 ;;
-      *) die "lock takes --relock, --java <major> and, after --, gradle arguments; got $1" ;;
+      *) die "lock takes --relock, --java <major>, --lockfile <path> and, after --, gradle arguments; got $1" ;;
     esac
   done
   local gradle_args=("$@")
-  require_build_root
+  set_paths "$given"
 
-  local root=$PWD
-  local hash
-  hash=$(inputs_hash "${gradle_args[@]}")
-  if [ -z "$relock" ] && [ -f "$lockfile" ] && [ "$(jq -r '.inputsHash' "$lockfile")" = "$hash" ] \
-    && [ "$(jq -r '.version' "$lockfile")" = "$lock_version" ]; then
+  local args_json current
+  args_json=$(jq -n -c '$ARGS.positional' --args -- "${gradle_args[@]}")
+  current=$(inputs_hash "$args_json")
+  if [ -z "$relock" ] && [ -f "$lockfile" ] \
+    && jq -e --argjson version "$lock_version" --arg current "$current" \
+      '.version == $version and .inputsHash == $current' "$lockfile" >/dev/null 2>&1 \
+    && [ "$(jq -r '.contentHash' "$lockfile")" = "$(content_hash "$lockfile")" ]; then
     echo "gradle-purifier: $lockfile is current" >&2
     return 0
   fi
+
+  mkdir -p "$state"
+  pinned_listings >"$state/pinned.tsv"
+  update_args=()
+  run_lock "$java_major" "$state/pinned.tsv" '' "${gradle_args[@]}"
+}
+
+update_command() {
+  local java_major='' given='' have_args='' packages=() gradle_args=()
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --java)
+        [ $# -ge 2 ] || die "--java takes a Java major version, such as 17"
+        java_major=$2
+        shift 2
+        ;;
+      --lockfile)
+        [ $# -ge 2 ] || die "--lockfile takes a path"
+        given=$2
+        shift 2
+        ;;
+      --)
+        shift
+        gradle_args=("$@")
+        have_args=1
+        break
+        ;;
+      -h | --help) usage; exit 0 ;;
+      -*) die "update takes --java <major>, --lockfile <path>, packages and, after --, gradle arguments; got $1" ;;
+      *)
+        [[ $1 == *:* ]] || die "a package is group:artifact, or group:* for every artifact of a group; got $1"
+        packages+=("$1")
+        shift
+        ;;
+    esac
+  done
+  set_paths "$given"
+  # The update keeps the gradle arguments of the lock unless it is given
+  # others.
+  if [ -z "$have_args" ] && [ -f "$lockfile" ]; then
+    mapfile -t gradle_args < <(jq -r '.gradleArguments[]?' "$lockfile" 2>/dev/null || true)
+  fi
+
+  mkdir -p "$state"
+  : >"$state/pinned.tsv"
+  update_args=()
+  if [ ${#packages[@]} -gt 0 ]; then
+    pinned_listings "${packages[@]}" >"$state/pinned.tsv"
+    if uses_dependency_locking; then
+      update_args=(--update-locks "$(IFS=,; echo "${packages[*]}")")
+    fi
+  elif uses_dependency_locking; then
+    update_args=(--write-locks)
+  fi
+  run_lock "$java_major" "$state/pinned.tsv" 1 "${gradle_args[@]}"
+}
+
+# The version listings (maven-metadata files) of the lockfile, for the
+# recorder to serve in place of the remote ones (GRADLE_PURIFIER_PINNED):
+# a line of the path and the contents in Base64 for each listing, except
+# the listings of the packages $@ (group:artifact, or group:* for every
+# artifact of a group). A lockfile of another format version pins
+# nothing, and a lockfile that is not JSON fails the command.
+pinned_listings() {
+  [ -f "$lockfile" ] || return 0
+  jq -r --argjson version "$lock_version" --args '
+    ($ARGS.positional | map(split(":") | {group: (.[0] | gsub("\\."; "/")), artifact: (.[1] // "*")})) as $updated
+    | select(.version == $version)
+    | .artifacts[]
+    | select(.contents != null)
+    | (.path | split("/")) as $segments
+    | select(($segments | length) > 2)
+    | select(
+        ($segments[-2]) as $artifact
+        | ($segments[:-2] | join("/")) as $groupDir
+        | $updated
+        | any(. as $u | ($groupDir | endswith("/" + $u.group)) and ($u.artifact == "*" or $u.artifact == $artifact))
+        | not)
+    | [.path, (.contents | @base64)]
+    | @tsv' "$@" <"$lockfile" || die "$lockfile is not JSON; restore it from version control, or delete it and run 'gradle-purifier lock'"
+}
+
+# Whether the build uses Gradle's dependency locking: Gradle wrote a
+# lockfile somewhere in it.
+uses_dependency_locking() {
+  [ -n "$(find . \( -name .git -o -name .gradle -o -name .gradle-purifier -o -name build -o -name node_modules \) -prune -o \
+    -type f -name '*gradle.lockfile' -print -quit)" ]
+}
+
+# The gradle arguments of an update that writes Gradle's own lockfiles,
+# which the lock does not record.
+update_args=()
+
+# The lock run: Gradle on the JDK of the Java major version $1 (or the
+# default), with the recorder serving the pinned version listings of the
+# file $2; when $3 is not empty, Gradle's own lockfiles are copied back
+# from the lock run to the build. The gradle arguments follow.
+run_lock() {
+  local java_major=$1 pins=$2 copy_back=$3
+  shift 3
+  local gradle_args=("$@")
+  local args_json
+  args_json=$(jq -n -c '$ARGS.positional' --args -- "${gradle_args[@]}")
 
   local url
   url=$(distribution_url)
@@ -274,7 +391,7 @@ lock_command() {
   local gradle_home
   gradle_home=$(unpack_distribution "$dist_zip")
 
-  local work=$root/.gradle/purifier/lock-run
+  local work=$state/lock-run
   rm -rf "$work"
   mkdir -p "$work"
   copy_build "$work/build"
@@ -286,7 +403,8 @@ lock_command() {
   # Empty jdk.http.auth.*.disabledSchemes let the recorder send the Basic
   # credentials of an https_proxy URL to the proxy, for HTTPS tunnels and
   # for plain HTTP alike.
-  "$java/bin/java" -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes= \
+  GRADLE_PURIFIER_PINNED=$pins \
+    "$java/bin/java" -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes= \
     -cp "$recorder" Recorder "$records" "$work/port" "${konan_hosts[@]}" &
   local recorder_pid=$!
   # shellcheck disable=SC2064 # the PID is known now
@@ -304,7 +422,7 @@ lock_command() {
   tunnel_port=${ports[1]}
 
   echo "gradle-purifier: running the lock build in $work/build" >&2
-  (
+  if ! (
     cd "$work/build" || exit 1
     # Gradle's own HTTP client reaches only the recorder: a remote it
     # contacts directly goes to a proxy that refuses, so a download the
@@ -327,17 +445,31 @@ lock_command() {
       '-Dhttp.nonProxyHosts=localhost|127.0.0.1' \
       -Porg.gradle.java.installations.auto-download=false \
       -Pkotlin.compiler.execution.strategy=in-process \
-      "${gradle_args[@]}" \
+      "${gradle_args[@]}" "${update_args[@]}" \
       purifierLock </dev/null 2>&1 | tee "$work/gradle.log"
-  )
+  ); then
+    # The lock serves the version listings of the lockfile, so a dynamic
+    # version resolves as it did; a build that now asks for a version the
+    # listing does not have needs an update of that package.
+    if grep -q -e 'Could not find any version that matches' -e 'Could not find any matches for' "$work/gradle.log"; then
+      die "the lock build failed: a dynamic version asks for a version that the version listings of the lockfile do not have; run 'gradle-purifier update <group>:<artifact>' for that package, or 'gradle-purifier update' for every package"
+    fi
+    die "the lock build failed (Gradle names the cause above)"
+  fi
   kill "$recorder_pid" 2>/dev/null || true
   wait "$recorder_pid" 2>/dev/null || true
   trap - EXIT
-  record_konan_dependencies "$work/gradle.log" "$records" "$work/konan-dependencies"
+  record_konan_dependencies "$work/gradle.log" "$records"
+  if [ -n "$copy_back" ]; then
+    rsync -a --prune-empty-dirs --exclude=.gradle/ --exclude=.gradle-purifier/ \
+      --include='*/' --include='*gradle.lockfile' --exclude='*' "$work/build/" "$root/"
+  fi
+  # The hash of the build definition after the run, which an update may
+  # change through Gradle's own lockfiles.
+  local hash
+  hash=$(inputs_hash "$args_json")
 
   [ -f "$work/output/projects.json" ] || die "the lock build wrote no projects.json"
-  local args_json
-  args_json=$(jq -n '$ARGS.positional' --args -- "${gradle_args[@]}")
   # A large build locks more than fits in one argument, so the artifacts
   # go to jq as a file.
   artifacts_json "$records" >"$work/artifacts.json"
@@ -345,212 +477,174 @@ lock_command() {
     --argjson version "$lock_version" \
     --slurpfile described "$work/output/projects.json" \
     --slurpfile artifacts "$work/artifacts.json" \
-    --rawfile konanDependencies "$work/konan-dependencies" \
-    --arg konanHost "$(konan_host)" \
     --arg distribution "$(tree_path "$url")" \
     --arg inputsHash "$hash" \
+    --arg konanHost "$(konan_host)" \
     --argjson gradleArguments "$args_json" \
     '{
       version: $version,
-      gradleVersion: $described[0].gradleVersion,
-      javaVersion: $described[0].javaVersion,
-      distribution: $distribution,
-      gradleArguments: $gradleArguments,
+      contentHash: "",
       inputsHash: $inputsHash,
-      projects: $described[0].projects,
-      konanDependencies: ($konanDependencies | split("\n") | map(select(length > 0)) | unique),
+      gradleArguments: $gradleArguments,
+      javaMajor: $described[0].javaMajor,
+      distribution: $distribution,
+      rootProjectName: $described[0].rootProjectName,
       konanHost: $konanHost,
+      projects: $described[0].projects,
       artifacts: $artifacts[0]
-    }' >"$root/$lockfile.tmp"
-  mv "$root/$lockfile.tmp" "$root/$lockfile"
-  echo "gradle-purifier: wrote $lockfile ($(jq '.artifacts | length' "$root/$lockfile") downloads)" >&2
+    }' >"$work/lock.json"
+  mkdir -p "$(dirname "$lockfile")"
+  jq --arg contentHash "$(content_hash "$work/lock.json")" '.contentHash = $contentHash' \
+    "$work/lock.json" >"$lockfile.tmp"
+  mv "$lockfile.tmp" "$lockfile"
+  echo "gradle-purifier: wrote $lockfile ($(jq '.artifacts | length' "$lockfile") downloads)" >&2
 }
 
-# Fetches the locked downloads through Nix and prints the store path of
-# their tree (repository.nix, as the Nix builder makes it), with a GC root
-# in .gradle/purifier.
-realize() {
-  local state=$PWD/.gradle/purifier
+# Builds the attribute $1 of the build (nix/lib/command.nix, which applies
+# buildGradleProject to the build root and the lockfile), with a GC root
+# beside the lockfile, and prints its store path. The lockfile's problems
+# (stale, tampered, malformed, incomplete) fail here, as at Nix evaluation
+# of the flake.
+build_attr() {
   mkdir -p "$state"
-  local tree
-  if ! tree=$(nix-build --quiet --out-link "$state/repository" \
-    --expr "{ lockFile }: (import $nixpkgs { }).callPackage $lib/repository.nix { inherit lockFile; }" \
-    --arg lockFile "$PWD/$lockfile"); then
-    die "the locked downloads did not fetch (see Nix's error above). A hash mismatch means $lockfile does not match what its URL serves: restore the lockfile from version control, or run 'gradle-purifier lock --relock' if the remote changed the file."
+  local out
+  if ! out=$(nix-build --quiet "$lib/command.nix" \
+    --argstr nixpkgs "$nixpkgs" --argstr purifierSource "$purifier_source" \
+    --argstr src "$root" --argstr lockFile "$lockfile" \
+    -A "$1" --out-link "$state/$1"); then
+    die "Nix could not build the $1 of $lockfile (see Nix's error above). A hash mismatch means the lockfile does not match what a URL serves: restore the lockfile from version control, or run 'gradle-purifier lock --relock' if the remote changed the file."
   fi
-  printf '%s' "$tree"
+  printf '%s' "$out" | tail -n 1
 }
 
-# Succeeds when the lockfile exists, has this command's format, and was
-# made from the current build definition. Otherwise it says why on stderr,
-# followed by $1, and fails.
-lock_is_current() {
-  local consequence=$1
-  if [ ! -f "$lockfile" ]; then
-    echo "gradle-purifier: the build has no $lockfile; run 'gradle-purifier lock'. $consequence" >&2
-    return 1
-  fi
-  if ! jq -e 'type == "object" and (.artifacts | type == "array") and (.projects | type == "array")' "$lockfile" >/dev/null 2>&1; then
-    die "$lockfile is not a gradle-purifier lockfile (it is not valid JSON, or it lacks artifacts or projects); restore it from version control or run 'gradle-purifier lock --relock'"
-  fi
-  local locked_args=()
-  mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
-  if [ "$(jq -r '.version' "$lockfile")" != "$lock_version" ]; then
-    echo "gradle-purifier: $lockfile has another lock format; run 'gradle-purifier lock --relock'. $consequence" >&2
-    return 1
-  fi
-  if [ "$(jq -r '.inputsHash' "$lockfile")" != "$(inputs_hash "${locked_args[@]}")" ]; then
-    echo "gradle-purifier: the build definition changed since $lockfile was made; run 'gradle-purifier lock'. $consequence" >&2
-    return 1
-  fi
-}
-
-# When the lock holds a Kotlin/Native toolchain, builds it with Nix,
-# unpacked and patched (konan.nix), as the dependencies of the
-# Kotlin/Native data directory .gradle/purifier/konan, and sets the
-# environment Kotlin/Native runs with, as the Nix builder does.
-setup_konan() {
-  [ "$(jq '.konanDependencies // [] | length' "$lockfile")" -gt 0 ] || return 0
-  local state=$PWD/.gradle/purifier
-  local toolchain
-  toolchain=$(nix-build --quiet --out-link "$state/konan-gcroot" \
-    --expr "{ lockFile }: (import $nixpkgs { }).callPackage $lib/konan.nix { inherit lockFile; }" \
-    --arg lockFile "$PWD/$lockfile")
-  export KONAN_DATA_DIR=$state/konan
-  rm -rf "$KONAN_DATA_DIR/dependencies"
-  mkdir -p "$KONAN_DATA_DIR/dependencies"
-  local dependency
-  for dependency in "$toolchain"/*; do
-    ln -s "$dependency" "$KONAN_DATA_DIR/dependencies/"
+prefetch_command() {
+  local given=''
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --lockfile)
+        [ $# -ge 2 ] || die "--lockfile takes a path"
+        given=$2
+        shift 2
+        ;;
+      -h | --help) usage; exit 0 ;;
+      *) die "prefetch takes --lockfile <path>; got $1" ;;
+    esac
   done
-  cp "$toolchain/.extracted" "$KONAN_DATA_DIR/dependencies/.extracted"
-  export LD_LIBRARY_PATH=$konan_library_path${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-  local host
-  host=$(konan_host)
-  export GRADLE_PURIFIER_KONAN_PROPERTIES="dynamicLinker.$host=$dynamic_linker"
+  set_paths "$given"
+  [ -f "$lockfile" ] || die "the build has no $lockfile; run 'gradle-purifier lock'"
+
+  local tree jdk distribution
+  tree=$(build_attr repository)
+  jdk=$(build_attr jdk)
+  distribution=$(build_attr distribution)
+
+  # ./gradlew finds the distribution installed where it looks for it.
+  local user_home=${GRADLE_USER_HOME:-$HOME/.gradle}
+  local wrapper_jar paths dist_dir zip
+  wrapper_jar=$(find "$distribution/lib" -maxdepth 1 -name 'gradle-wrapper-shared-*.jar' | head -n 1)
+  if [ -n "$wrapper_jar" ] && [ -f gradle/wrapper/gradle-wrapper.properties ]; then
+    mapfile -t paths < <("$jdk/lib/openjdk/bin/java" -cp "$wrapper_jar" "$lib/WrapperDistribution.java" "$user_home" "$root")
+    dist_dir=${paths[0]}
+    zip=${paths[1]}
+    mkdir -p "$dist_dir"
+    ln -sfn "$distribution" "$dist_dir/$(basename "$zip" | sed 's/-\(bin\|all\)\.zip$//')"
+    touch "$zip.ok"
+  fi
+
+  local properties=$root/.gradle/purifier/prefetch.properties
+  mkdir -p "$(dirname "$properties")"
+  {
+    echo "# Written by gradle-purifier prefetch, for the init script in $user_home/init.d."
+    echo "lockFile=$lockfile"
+    echo "lockSha256=$(sha256sum "$lockfile" | cut -d ' ' -f 1)"
+    echo "initScript=$lib/purifier.init.gradle"
+    echo "portal=file://$tree/$portal"
+    echo "gradle.purifier.repository=file://$tree"
+  } >"$properties"
+
+  if [ "$(jq '[.artifacts[] | select(.url // "" | startswith("https://download.jetbrains.com/kotlin/native/"))] | length' "$lockfile")" -gt 0 ]; then
+    local toolchain konan_dir host
+    toolchain=$(build_attr konan)
+    konan_dir=$state/konan
+    rm -rf "$konan_dir/dependencies"
+    mkdir -p "$konan_dir/dependencies"
+    local dependency
+    for dependency in "$toolchain"/*; do
+      ln -s "$dependency" "$konan_dir/dependencies/"
+    done
+    cp "$toolchain/.extracted" "$konan_dir/dependencies/.extracted"
+    host=$(konan_host)
+    {
+      echo "gradle.purifier.konan.data.dir=$konan_dir"
+      echo "gradle.purifier.konan.properties=dynamicLinker.$host=$dynamic_linker"
+    } >>"$properties"
+  fi
+
+  # The init scripts run from the store; this root keeps them there.
+  nix-store --add-root "$state/lib" --realise "$lib" >/dev/null
+  mkdir -p "$user_home/init.d"
+  install -m 0644 "$lib/user.init.gradle" "$user_home/init.d/gradle-purifier.gradle"
+
+  echo "gradle-purifier: prefetched $lockfile. ./gradlew, a Gradle on the PATH and an IDE now build $root from the locked downloads, offline; the init script is $user_home/init.d/gradle-purifier.gradle. Run 'gradle-purifier prefetch' again after each lock." >&2
+  local major
+  major=$(jq -r '.javaMajor' "$lockfile")
+  if [ -n "${JAVA_HOME:-}" ] && ! "$JAVA_HOME/bin/java" -version 2>&1 | grep -q "version \"${major}[.\"]"; then
+    echo "gradle-purifier: the lock was made on Java $major and JAVA_HOME is another; for the same builds, export JAVA_HOME=$jdk/lib/openjdk" >&2
+  fi
 }
 
-# Runs the Gradle of the lock on the locked downloads, in the init
-# script's mode $1, with the gradle arguments that follow. The variables
-# of the environment pass on to Gradle.
-run_locked_gradle() {
-  local mode=$1
-  shift
-  setup_konan
-  local tree
-  tree=$(realize)
-  local gradle_home
-  gradle_home=$(unpack_distribution "$tree/$(jq -r '.distribution' "$lockfile")")
-  local locked_args=()
-  mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
-  # A run on the lock takes the Java major version the lock was made with,
-  # whatever JAVA_HOME names, unless GRADLE_PURIFIER_JAVA_HOME names a JDK.
-  local java
-  if [ -n "${GRADLE_PURIFIER_JAVA_HOME:-}" ]; then
-    java=$GRADLE_PURIFIER_JAVA_HOME
-  else
-    java=$(nixpkgs_jdk "$(locked_java_major)")
-  fi
-  # Gradle's errors go to the terminal and to a log as well, so that a
-  # failure to find a locked file can be explained after Gradle exits.
-  local errors status=0
-  errors=$(mktemp "${TMPDIR:-/tmp}/gradle-purifier-errors.XXXXXX")
-  JAVA_HOME=$java \
-    GRADLE_PURIFIER_MODE=$mode \
-    GRADLE_PURIFIER_REPOSITORY=file://$tree \
-    "$gradle_home/bin/gradle" \
-    --offline \
-    --init-script "$lib/purifier.init.gradle" \
-    "-Dorg.gradle.internal.plugins.portal.url.override=file://$tree/$portal" \
-    "${locked_args[@]}" \
-    "$@" 2> >(tee "$errors" >&2) || status=$?
-  wait "$!" 2>/dev/null || true
-  if [ "$status" -ne 0 ] && grep -q -e 'Could not find' -e 'Could not resolve' "$errors" \
-    && grep -q -F "$tree" "$errors"; then
-    echo "gradle-purifier: the build needs a file that $lockfile does not hold (Gradle names it above). Run 'gradle-purifier lock --relock' to lock it, or restore the lockfile if it was edited." >&2
-  fi
-  rm -f "$errors"
-  exit "$status"
-}
-
-run_command() {
-  require_build_root
-  if [ -f "$lockfile" ] || [ ! -x ./gradlew ]; then
-    if lock_is_current "Gradle runs the usual way."; then
-      run_locked_gradle interactive "$@"
-    fi
-  fi
-  [ -x ./gradlew ] || die "the build has no current $lockfile and no ./gradlew"
-  exec ./gradlew "$@"
-}
-
-# Builds the package of every publishing project with Nix, and runs the
-# build's publish tasks (`publish`, or the gradle arguments given) with
-# those packages' files in place of the ones Gradle would make.
+# Builds the release with Nix, and runs the build's publish tasks
+# (`publish`, or the gradle arguments given) with the files Nix built in
+# place of the ones Gradle would make.
 publish_command() {
-  require_build_root
-  lock_is_current "Nothing is published." || exit 1
-  local state=$PWD/.gradle/purifier/published
-  mkdir -p "$state"
-  local artifacts='{}' id out
-  while IFS= read -r id; do
-    echo "gradle-purifier: building $id with Nix" >&2
-    out=$(nix-build "$lib/publish.nix" --argstr nixpkgs "$nixpkgs" --argstr src "$PWD" -A "$id" --out-link "$state/$id")
-    artifacts=$(jq --arg id "$id" --arg out "$out" '. + {($id): $out}' <<<"$artifacts")
-  done < <(jq -r '.projects[] | select(.publications != []) | .id' "$lockfile")
+  local given=''
+  if [ "${1:-}" = --lockfile ]; then
+    [ $# -ge 2 ] || die "--lockfile takes a path"
+    given=$2
+    shift 2
+  fi
+  set_paths "$given"
+  [ -f "$lockfile" ] || die "the build has no $lockfile; run 'gradle-purifier lock'"
+  local release tree jdk distribution
+  release=$(build_attr release)
+  tree=$(build_attr repository)
+  jdk=$(build_attr jdk)
+  distribution=$(build_attr distribution)
+  local artifacts='{}' package
+  for package in "$release"/*; do
+    [ -e "$package" ] || continue
+    artifacts=$(jq --arg id "$(basename "$package")" --arg out "$(readlink -f "$package")" '. + {($id): $out}' <<<"$artifacts")
+  done
   [ $# -gt 0 ] || set -- publish
   # The init script disables the task that generates each publication's
   # Gradle module metadata, so Gradle does not publish its output, and
   # publishes the module metadata Nix built instead. Gradle still runs the
   # dependencies of a disabled task, which compile and package the
   # project; excluding the task with -x leaves them out.
-  local excluded=()
+  local excluded=() locked_args=()
   mapfile -t excluded < <(jq -r '.projects[] | (if .path == ":" then "" else .path end) as $p
     | .publications[] | "-x", "\($p):generateMetadataFileFor\(.name[0:1] | ascii_upcase)\(.name[1:])Publication"' "$lockfile")
-  GRADLE_PURIFIER_ARTIFACTS=$artifacts run_locked_gradle publish "${excluded[@]}" "$@"
-}
-
-# Prepares the build for an IDE, which imports it with its own Gradle
-# through the tooling API: realizes the lockfile, records in
-# .gradle/purifier/ide.properties what the IDE init script needs, and
-# installs that script (ide.init.gradle) in the init.d of the Gradle user
-# home, where every Gradle build applies it.
-ide_command() {
-  require_build_root
-  lock_is_current "The IDE resolves the usual way." || exit 1
-  local state=$PWD/.gradle/purifier
-  local tree
-  tree=$(realize)
-  # The IDE's builds apply the init script from the store; this root keeps
-  # it there.
-  nix-store --add-root "$state/lib" --realise "$lib" >/dev/null
-  local sha256
-  sha256=$(sha256sum "$lockfile" | cut -d ' ' -f 1)
-  {
-    echo "# Written by gradle-purifier ide, for the IDE init script."
-    echo "repository=file://$tree"
-    echo "portal=file://$tree/$portal"
-    echo "initScript=$lib/purifier.init.gradle"
-    echo "lockSha256=$sha256"
-  } >"$state/ide.properties"
-  local init_d=${GRADLE_USER_HOME:-$HOME/.gradle}/init.d
-  mkdir -p "$init_d"
-  install -m 0644 "$lib/ide.init.gradle" "$init_d/gradle-purifier.gradle"
-  # An IDE set to this local Gradle distribution needs no download of the
-  # wrapper's distribution either.
-  local gradle_home
-  gradle_home=$(unpack_distribution "$tree/$(jq -r '.distribution' "$lockfile")")
-  ln -sfn "$gradle_home" "$state/gradle"
-  echo "gradle-purifier: the IDE's Gradle builds of $PWD read the locked downloads now ($init_d/gradle-purifier.gradle). For no download at all, set the IDE's Gradle distribution to $state/gradle. Run 'gradle-purifier ide' again after each lock." >&2
+  mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
+  JAVA_HOME=$jdk/lib/openjdk \
+    GRADLE_PURIFIER_MODE=publish \
+    GRADLE_PURIFIER_REPOSITORY=file://$tree \
+    GRADLE_PURIFIER_ARTIFACTS=$artifacts \
+    exec "$distribution/bin/gradle" \
+    --offline \
+    --init-script "$lib/purifier.init.gradle" \
+    "-Dorg.gradle.internal.plugins.portal.url.override=file://$tree/$portal" \
+    "${locked_args[@]}" "${excluded[@]}" "$@"
 }
 
 # The unit tests (tests/cli-unit.sh) source the command for its functions.
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   case ${1:-} in
     lock) shift; lock_command "$@" ;;
+    update) shift; update_command "$@" ;;
+    prefetch) shift; prefetch_command "$@" ;;
     publish) shift; publish_command "$@" ;;
-    ide) shift; ide_command "$@" ;;
-    -h | --help) usage ;;
-    *) run_command "$@" ;;
+    -h | --help | help) usage ;;
+    '') usage; exit 1 ;;
+    *) usage >&2; die "the commands are lock, update, prefetch and publish; for the build itself, run ./gradlew $* after 'gradle-purifier prefetch'" ;;
   esac
 fi
