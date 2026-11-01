@@ -24,9 +24,10 @@ describes what it does for a user.
 - The command (`src/gradle-purifier.sh`, packaged by `pkgs/gradle-purifier`):
   `lock`, `update`, `prefetch` and `publish`.
 - The Nix library (`nix/lib`). The builder
-  (`nix/lib/build-gradle-project.nix`) is a package for `callPackage`,
-  which the default package overlay adds to the package set as
-  `buildGradleProject`. It takes the fetchers and the tree of locked
+  (`nix/lib/build-gradle-project.nix`) is a package for `callPackage`.
+  The default package overlay adds the scope `gradle-purifier` of `pkgs/`
+  to the package set, and the scope holds the builder as
+  `buildGradleProject`, beside the command. The builder takes the fetchers and the tree of locked
   downloads from the shared nix-purifiers library. `readLock` is in
   `lib.gradle-purifier`. The command builds through `nix/lib/command.nix`,
   which calls the same builder, so the command and the flake check a

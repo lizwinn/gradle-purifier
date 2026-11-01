@@ -17,20 +17,26 @@ README sections as every other purifier.
 
 The build needs a Gradle wrapper (`gradle/wrapper/gradle-wrapper.properties`);
 the purifier runs the distribution that the wrapper names. Lock the build
-from its root, and commit `gradle-purifier.lock.json`:
+from its root:
 
 ```zsh
 nix run github:nix-purifiers/gradle-purifier -- lock
 ```
 
-The flake's `overlays.default` adds the builder `buildGradleProject` to
-the package set, beside the builders of nixpkgs. A package written for
-`callPackage` takes it by name:
+Commit `gradle-purifier.lock.json` to the repository, together with
+Gradle's own lockfiles when the build uses its dependency locking.
+Keeping both lockfiles in the repository is the default setup, and the
+one we recommend.
+
+The flake's `overlays.default` adds one attribute to the package set, the
+scope `gradle-purifier`. The scope holds the builder `buildGradleProject`
+and the `gradle-purifier` command. A package written for `callPackage`
+takes the scope by name:
 
 ```nix
 # package.nix
-{ buildGradleProject }:
-(buildGradleProject { src = ./.; }).packages.app
+{ gradle-purifier }:
+(gradle-purifier.buildGradleProject { src = ./.; }).packages.app
 ```
 
 ```nix
@@ -53,9 +59,11 @@ the package set, beside the builders of nixpkgs. A package written for
 }
 ```
 
-`buildGradleProject` takes what it needs from the package set by name,
-such as `javaPackages` and `stdenvNoCC`, and `buildGradleProject.override`
-replaces any of them. Its result has these attributes:
+`gradle-purifier.overrideScope` replaces what the scope shares. The
+builder takes what it needs from the package set by name, such as
+`javaPackages` and `stdenvNoCC`, and
+`gradle-purifier.buildGradleProject.override` replaces any of them. The
+builder's result has these attributes:
 
 - `packages.<id>` holds a package per project, named after the project:
   the name of the root project for the root project, and the project path
@@ -129,6 +137,13 @@ resolution as well as the downloads: it holds the version listings
 (`maven-metadata.xml`) that dynamic versions resolve through, and `lock`
 resolves from them again. In a build with dependency locking, `lock`
 keeps the resolution of Gradle's lockfiles as they are.
+
+Gradle's dependency locking writes a lockfile for each project, for the
+settings and for each buildscript, rather than one file. Gradle's
+lockfiles therefore stay in the tree: the builder takes no argument for
+a copy of them kept elsewhere, and the commands take no
+`--tool-lockfile`. A build kept external keeps only
+`gradle-purifier.lock.json` outside the tree.
 
 These are the commands:
 
@@ -277,8 +292,8 @@ A `package.nix` and a `flake.nix` at the root of the clone build it:
 
 ```nix
 # package.nix
-{ buildGradleProject }:
-(buildGradleProject { src = ./.; }).packages.spring-petclinic
+{ gradle-purifier }:
+(gradle-purifier.buildGradleProject { src = ./.; }).packages.spring-petclinic
 ```
 
 ```nix

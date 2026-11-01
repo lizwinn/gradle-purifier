@@ -6,8 +6,8 @@
 # CI jobs of the same name (.github/workflows/check.yml).
 {
   pkgs,
-  # The default package overlay of the flake, which adds
-  # buildGradleProject to the package set.
+  # The default package overlay of the flake, which adds the scope
+  # `gradle-purifier`, with buildGradleProject, to the package set.
   overlay,
   # The library namespace of the flake: lib.gradle-purifier, with readLock.
   gradlePurifier,
@@ -17,11 +17,12 @@ let
   inherit (pkgs) lib runCommand;
   inherit (gradlePurifier) readLock;
 
-  # Every fixture builds the way a package of a consumer does: with the
-  # buildGradleProject that the overlay adds to the package set, taken by
-  # name through callPackage.
+  # Every fixture builds the way a package of a consumer does: it takes the
+  # scope `gradle-purifier` that the overlay adds to the package set by
+  # name through callPackage, and calls its buildGradleProject.
   withOverlay = pkgs.extend overlay;
-  build = args: withOverlay.callPackage ({ buildGradleProject }: buildGradleProject args) { };
+  build =
+    args: withOverlay.callPackage ({ gradle-purifier }: gradle-purifier.buildGradleProject args) { };
 
   # A Java library in the Groovy DSL on Gradle 8, with a Maven publication
   # that carries a sources jar, and JUnit tests that run in the build.

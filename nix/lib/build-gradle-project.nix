@@ -3,14 +3,17 @@
 #
 # The file is a package for callPackage: the first argument set is what it
 # takes from the package set, and the result is the builder. The flake's
-# default package overlay (`overlays.default`) adds it to the package set
-# as `buildGradleProject`, with the nix-purifiers library that the flake
-# pins, so a package written for callPackage takes it like any other
-# builder:
+# default package overlay (`overlays.default`) adds the scope
+# `gradle-purifier` to the package set, and the scope holds it as
+# `buildGradleProject`, built with the nix-purifiers library that the
+# flake pins. A package written for callPackage takes the scope by name:
 #
-#   { buildGradleProject }: (buildGradleProject { src = ./.; }).packages.app
+#   { gradle-purifier }:
+#   (gradle-purifier.buildGradleProject { src = ./.; }).packages.app
 #
-# and `buildGradleProject.override` replaces what it takes from the set.
+# `gradle-purifier.overrideScope` replaces what the scope shares, and
+# `gradle-purifier.buildGradleProject.override` replaces what the builder
+# takes from the set.
 # The builder returns
 #
 #   packages.<id>  a package per project the lock names. Its `out` holds
@@ -37,9 +40,13 @@
   unzip,
   zlib,
   linkFarm,
-  runCommand,
-  fetchurl,
   callPackage,
+  # What the library's fetchEntry takes by name.
+  fetchurl,
+  runCommand,
+  zstd,
+  python3,
+  writeText,
   # The JDKs a build can run on; the default JDK of a build is the headless
   # one of the Java major version its lock was made with.
   javaPackages,
@@ -71,9 +78,17 @@
   srcFilter ? null,
 }:
 let
-  # The library's fetchers and tree take nixpkgs' fetchurl and runCommand
-  # from this set; the build fetches only files and inline entries.
-  fetcherPkgs = { inherit fetchurl runCommand; };
+  # The packages that the fetchEntry and tree of the library take by name.
+  fetcherArgs = {
+    inherit
+      fetchurl
+      runCommand
+      unzip
+      zstd
+      python3
+      writeText
+      ;
+  };
 
   # The lock in memory (read-lock.nix). checkLock fails evaluation with
   # its problems: a stale, tampered, malformed or incomplete lockfile.
@@ -133,11 +148,11 @@ let
   jdk' = if jdk != null then jdk else defaultJdk;
   javaHome = j: j.home or "${j}/lib/openjdk";
 
-  fetchEntry = purifier.fetchEntry ({ pkgs = fetcherPkgs; } // fetchers);
+  fetchEntry = purifier.fetchEntry (fetcherArgs // fetchers);
 
   repository = purifier.tree (
-    {
-      pkgs = fetcherPkgs;
+    fetcherArgs
+    // {
       name = "gradle-purifier-repository";
       inherit entries;
     }
