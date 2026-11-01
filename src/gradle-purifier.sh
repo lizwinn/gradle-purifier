@@ -245,6 +245,18 @@ konan_host() {
   esac
 }
 
+# The konanHost of the lockfile, as JSON: the Kotlin/Native name of this
+# machine when the records file $1 holds a download of a Kotlin/Native
+# toolchain, and null otherwise, so that the lock of a build without
+# Kotlin/Native is the same on every machine.
+lock_konan_host() {
+  if grep -q -F 'https://download.jetbrains.com/kotlin/native/' "$1"; then
+    printf '"%s"' "$(konan_host)"
+  else
+    printf 'null'
+  fi
+}
+
 lock_command() {
   local relock='' java_major='' given=''
   while [ $# -gt 0 ]; do
@@ -492,7 +504,7 @@ run_lock() {
     --slurpfile artifacts "$work/artifacts.json" \
     --arg distribution "$(tree_path "$url")" \
     --arg inputsHash "$hash" \
-    --arg konanHost "$(konan_host)" \
+    --argjson konanHost "$(lock_konan_host "$records")" \
     --argjson gradleArguments "$args_json" \
     '{
       version: $version,

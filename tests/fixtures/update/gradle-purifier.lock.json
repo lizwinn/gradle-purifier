@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "contentHash": "sha256:d4c2b7cb120ac42c9826b44e5141b20f35df1852dbf015798e9771c29a6bdf17",
+  "contentHash": "sha256:8800c482207ba11f4ffa96c9f41acb48efce293c77498aafb963963faf7d84f7",
   "inputsHash": "b62747f53c0658c834546c68a490dcfb8b460952b6ce89aa878869d89e8bfa7c",
   "gradleArguments": [],
   "javaMajor": 21,
   "distribution": "https/services.gradle.org/distributions/gradle-8.14.3-bin.zip",
   "rootProjectName": "update",
-  "konanHost": "linux_x64",
+  "konanHost": null,
   "projects": [
     {
       "path": ":",

@@ -73,7 +73,8 @@ let
         && isString (raw.inputsHash or null)
         && isString (raw.distribution or null)
         && isString (raw.rootProjectName or null)
-        && isString (raw.konanHost or null)
+        && raw ? konanHost
+        && (raw.konanHost == null || isString raw.konanHost)
         && isInt (raw.javaMajor or null)
         && isList (raw.gradleArguments or null)
         && isList (raw.projects or null)
@@ -135,13 +136,18 @@ let
 
   # Kotlin/Native downloads its toolchain from here. The toolchain runs on
   # the machine it was made for, so its entries are needed there only.
+  # konanHost names that machine, and is null in the lock of a build
+  # without Kotlin/Native.
   konanPrefix = "https://download.jetbrains.com/kotlin/native/";
   konanSystem =
-    {
-      linux_x64 = "x86_64-linux";
-      linux_arm64 = "aarch64-linux";
-    }
-    .${raw.konanHost} or raw.konanHost;
+    if raw.konanHost == null then
+      throw (problem "holds a Kotlin/Native toolchain and no konanHost")
+    else
+      {
+        linux_x64 = "x86_64-linux";
+        linux_arm64 = "aarch64-linux";
+      }
+      .${raw.konanHost} or raw.konanHost;
 
   # The entries of the purifier library: a file entry for each download,
   # and the inline entries as they are.

@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "contentHash": "sha256:472c432ff7be3a785fc3afd370630baeaee2ed386c76d8967c982539d1173be4",
+  "contentHash": "sha256:c27fa1c8e95277e8ce5733e95b6bc507899ad6a2cfd2e80b977dbb8690c3baac",
   "inputsHash": "3c592141966a0b3a291b2af944dff085e33ca5b06245a27d4a94804723125754",
   "gradleArguments": [],
   "javaMajor": 21,
   "distribution": "https/services.gradle.org/distributions/gradle-8.14.3-bin.zip",
   "rootProjectName": "greeting",
-  "konanHost": "linux_x64",
+  "konanHost": null,
   "projects": [
     {
       "path": ":",

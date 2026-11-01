@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "contentHash": "sha256:dbe13aab4a84619e8f019086551c5757236d6e79eef3e95d82360d08117e610e",
+  "contentHash": "sha256:8b7fee94888dff5fc2ef6b9b641db276c23acb5d6eb4f827e24cb87ec6561301",
   "inputsHash": "ac787a787719517c287d338f90f381bd1247693d28138770860b2fe95e6c8bd6",
   "gradleArguments": [],
   "javaMajor": 21,
   "distribution": "https/services.gradle.org/distributions/gradle-9.1.0-bin.zip",
   "rootProjectName": "kotlin-app",
-  "konanHost": "linux_x64",
+  "konanHost": null,
   "projects": [
     {
       "path": ":app",
