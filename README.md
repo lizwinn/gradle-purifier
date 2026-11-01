@@ -30,14 +30,29 @@ one we recommend.
 
 The flake's `overlays.default` adds one attribute to the package set, the
 scope `gradle-purifier`. The scope holds the builder `buildGradleProject`
-and the `gradle-purifier` command. A package written for `callPackage`
-takes the scope by name:
+and the `gradle-purifier` command. Build from the project's directory,
+without adding a Nix file. Replace `app` with the project to build:
 
-```nix
-# package.nix
-{ gradle-purifier }:
-(gradle-purifier.buildGradleProject { src = ./.; }).packages.app
+```zsh
+nix build --impure --expr '
+  let
+    purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
+    pkgs = import purifier.inputs.nixpkgs {
+      system = builtins.currentSystem;
+      overlays = [ purifier.overlays.default ];
+    };
+  in
+  (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app'
 ```
+
+This uses the purifier's pinned nixpkgs, matching the lock command above.
+To build with ambient `<nixpkgs>` from your Nix search path instead,
+replace `import purifier.inputs.nixpkgs` with `import <nixpkgs>`.
+Both forms need no Nix files in your project. The build tool and language
+versions must match the lockfile; with ambient nixpkgs, lock with the
+purifier from that package set or pass a compatible toolchain to the builder.
+
+A flake is optional and can live in the project or in another repository:
 
 ```nix
 # flake.nix
@@ -54,7 +69,8 @@ takes the scope by name:
       };
     in
     {
-      packages.${system}.app = pkgs.callPackage ./package.nix { };
+      packages.${system}.app =
+        (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app;
     };
 }
 ```
@@ -288,38 +304,19 @@ nix run github:nix-purifiers/gradle-purifier -- lock --java 17
 git add gradle-purifier.lock.json
 ```
 
-A `package.nix` and a `flake.nix` at the root of the clone build it:
-
-```nix
-# package.nix
-{ gradle-purifier }:
-(gradle-purifier.buildGradleProject { src = ./.; }).packages.spring-petclinic
-```
-
-```nix
-# flake.nix
-{
-  inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
-  inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
-
-  outputs = { nixpkgs, gradle-purifier, ... }:
-    let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ gradle-purifier.overlays.default ];
-      };
-    in
-    {
-      packages.${system}.default = pkgs.callPackage ./package.nix { };
-    };
-}
-```
-
-`nix build` then makes the Spring Boot jar, which runs on Java 17:
+Build the Spring Boot jar from the clone's directory, with no Nix files
+added to it, then run it on Java 17:
 
 ```zsh
-nix build
+nix build --impure --expr '
+  let
+    purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
+    pkgs = import purifier.inputs.nixpkgs {
+      system = builtins.currentSystem;
+      overlays = [ purifier.overlays.default ];
+    };
+  in
+  (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.spring-petclinic'
 java -jar result/share/archives/spring-petclinic.jar
 ```
 
