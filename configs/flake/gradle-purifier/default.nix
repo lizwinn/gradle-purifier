@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-{ ... }:
+{ closure-lib, ... }:
 {
   config,
   inputs,
@@ -8,7 +8,14 @@
 }:
 {
 
-  imports = [ inputs.flake-parts.flakeModules.partitions ];
+  imports = [
+    inputs.flake-parts.flakeModules.partitions
+    closure-lib.caisson.modules.flake."purifier/purifier-packages"
+  ];
+
+  # The flake publishes as its packages the derivations of the scope
+  # `pkgs.gradle-purifier` that the default package overlay adds.
+  purifier.scope = "gradle-purifier";
 
   debug = false;
   caisson = {
@@ -18,11 +25,7 @@
 
     # The package set applies the `default` entry of this flake's package
     # overlay registry (pkg-overlays/) by default, and the flake exports it
-    # as `pkgOverlays` and as the plain `overlays.default`. The overlay
-    # adds the scope `gradle-purifier`, whose builder is a function, so
-    # caisson's export of the scope as packages is off, and the flake
-    # publishes the derivations of the scope itself, below.
-    nixpkgs.packages.export.enabled = false;
+    # as `pkgOverlays` and as the plain `overlays.default`.
   };
 
   # `nix run github:nix-purifiers/gradle-purifier -- lock` locks the Gradle
@@ -31,9 +34,7 @@
   perSystem =
     { config, pkgs, ... }:
     {
-      packages = lib.filterAttrs (_: lib.isDerivation) pkgs.gradle-purifier // {
-        default = config.packages.gradle-purifier;
-      };
+      packages.default = config.packages.gradle-purifier;
       devShells.default = pkgs.mkShell {
         packages = [ config.packages.gradle-purifier ];
       };
