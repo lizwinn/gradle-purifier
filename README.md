@@ -160,9 +160,8 @@ publish.
 ## Offline work
 
 After `prefetch`, `./gradlew`, a Gradle on the `PATH` and an IDE build
-with the network cut off. The `conformance-offline` CI job checks this on
-each fixture: it builds, tests and runs each one in a network namespace
-without a network, and checks that Gradle downloaded nothing.
+with the network cut off. Gradle reads the locked files from the Nix
+store, so its own download cache stays empty.
 
 ## Editor
 
@@ -247,18 +246,52 @@ build then needs a `fetchers.fetchurl` that supplies them.
 
 ## Examples
 
-CI locks and builds
-[Spring PetClinic](https://github.com/spring-projects/spring-petclinic),
-a Spring Boot application on Gradle 9 with a Java 17 toolchain. The
-`petclinic` check builds it from its source on GitHub and a lockfile
-kept outside that source, in `tests/real-world/`. The hand-started
-`lock-real-world` workflow makes that lockfile on a runner.
+[Spring PetClinic](https://github.com/spring-projects/spring-petclinic)
+is a Spring Boot application with a Gradle wrapper and a Java 17
+toolchain. In a clone of it, lock it on Java 17:
 
-The fixtures in `tests/fixtures/` show smaller builds. One is a Java
-library in the Groovy DSL with an included build and an Ivy repository.
-Another is a Kotlin build with a convention plugin in `buildSrc` and a
-Multiplatform library. There is also a Kotlin/Native executable, which
-builds on x86_64-linux only.
+```zsh
+nix run github:nix-purifiers/gradle-purifier -- lock --java 17
+git add gradle-purifier.lock.json
+```
+
+A `flake.nix` at the root of the clone builds it:
+
+```nix
+{
+  inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
+  inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
+
+  outputs = { nixpkgs, gradle-purifier, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+      build = gradle-purifier.lib.gradle-purifier.buildGradleProject {
+        inherit pkgs;
+        src = ./.;
+      };
+    in
+    {
+      packages.${system}.default = build.packages.spring-petclinic;
+      checks.${system}.tests = build.tests;
+    };
+}
+```
+
+`nix build` then makes the Spring Boot jar, which runs on Java 17:
+
+```zsh
+nix build
+java -jar result/share/archives/spring-petclinic.jar
+```
+
+For the everyday loop, `prefetch` sets up the wrapper, and the usual
+commands work offline:
+
+```zsh
+nix run github:nix-purifiers/gradle-purifier -- prefetch
+./gradlew bootRun
+```
 
 ## Credits
 
