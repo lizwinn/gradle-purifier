@@ -1,0 +1,381 @@
+# SPDX-License-Identifier: MIT
+#
+# The gradle-purifier command. pkgs/gradle-purifier substitutes the @…@
+# names and runs it as a writeShellApplication, which sets errexit,
+# nounset and pipefail.
+#
+#   gradle-purifier lock [--relock] [-- <gradle arguments>]
+#       writes gradle-purifier.lock.json at the root of the build in the
+#       current directory
+#   gradle-purifier publish [<gradle arguments>]
+#       publishes what Nix built from the lockfile, through the build's
+#       own publish tasks
+#   gradle-purifier <gradle arguments>
+#       runs Gradle on the locked downloads, offline, when the lockfile is
+#       current; otherwise it runs ./gradlew
+#
+# The command runs the Gradle distribution that
+# gradle/wrapper/gradle-wrapper.properties names, as ./gradlew would.
+
+# A failure inside $(…) stops the command too.
+shopt -s inherit_errexit
+
+lib=@lib@
+recorder=@recorder@
+default_java=@java@
+lock_version=@lockVersion@
+# The nixpkgs whose package set `publish` builds the packages with.
+nixpkgs=@nixpkgs@
+
+lockfile=gradle-purifier.lock.json
+portal=https/plugins.gradle.org/m2
+
+die() {
+  echo "gradle-purifier: $*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+Usage:
+  gradle-purifier lock [--relock] [-- <gradle arguments>]
+      Writes gradle-purifier.lock.json: every file the build downloads,
+      by URL and hash, and the projects the Nix builder makes packages of.
+      The lock is renewed only when the build definition changed, unless
+      --relock is given. The gradle arguments are recorded in the lock and
+      passed to every Gradle run of the lock.
+  gradle-purifier publish [<gradle arguments>]
+      Builds every publishing project with Nix from the lockfile, then
+      runs the build's publish tasks (publish, unless gradle arguments
+      name others) with the files Nix built in place of the ones Gradle
+      would make. The build's repositories and credentials apply.
+  gradle-purifier <gradle arguments>
+      Runs Gradle offline on the locked downloads when the lockfile is
+      current, and ./gradlew otherwise.
+EOF
+}
+
+java_home() {
+  if [ -n "${JAVA_HOME:-}" ]; then
+    echo "$JAVA_HOME"
+  else
+    echo "$default_java"
+  fi
+}
+
+require_build_root() {
+  if [ ! -f settings.gradle ] && [ ! -f settings.gradle.kts ]; then
+    die "run this at the root of a Gradle build (the directory with settings.gradle or settings.gradle.kts)"
+  fi
+}
+
+# The distribution URL of the wrapper properties, with the escapes of the
+# properties format removed.
+distribution_url() {
+  local properties=gradle/wrapper/gradle-wrapper.properties
+  [ -f "$properties" ] || die "the build has no $properties; add a wrapper with 'gradle wrapper'"
+  local url
+  url=$(sed -n 's/^[[:space:]]*distributionUrl[[:space:]]*[=:][[:space:]]*//p' "$properties" | tail -n 1 | tr -d '\r')
+  [ -n "$url" ] || die "$properties sets no distributionUrl"
+  printf '%s' "${url//\\/}"
+}
+
+# The path of a URL in the tree of locked downloads.
+tree_path() {
+  local url=$1
+  local scheme=${url%%://*}
+  printf '%s/%s' "$scheme" "${url#*://}"
+}
+
+# The build definition: the files whose change means that the lock must
+# be made again. They are every settings and build script,
+# gradle.properties, the version catalogs and the wrapper properties, and
+# every file of buildSrc and of each included build (a directory below the
+# root with a settings script).
+definition_files() {
+  {
+    find . \( -name .git -o -name .gradle -o -name .kotlin -o -name .idea -o -name build -o -name node_modules \) -prune -o \
+      -type f \( -name 'settings.gradle' -o -name 'settings.gradle.kts' -o -name 'build.gradle' -o -name 'build.gradle.kts' \
+      -o -name 'gradle.properties' -o -name '*.versions.toml' -o -name 'gradle-wrapper.properties' -o -name '*.init.gradle' \) -print
+    local dir
+    for dir in ./buildSrc $(find . -mindepth 2 \( -name .git -o -name .gradle -o -name build -o -name node_modules \) -prune -o \
+      -type f \( -name settings.gradle -o -name settings.gradle.kts \) -printf '%h\n'); do
+      [ -d "$dir" ] || continue
+      find "$dir" \( -name .gradle -o -name .kotlin -o -name build \) -prune -o -type f -print
+    done
+  } | sort -u
+}
+
+inputs_hash() {
+  local files
+  files=$(definition_files)
+  {
+    printf '%s\n' "$*"
+    [ -z "$files" ] || printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 sha256sum
+  } | sha256sum | cut -d ' ' -f 1
+}
+
+# Unpacks the Gradle distribution zip $1 into the user's cache, once, and
+# prints its Gradle home.
+unpack_distribution() {
+  local zip=$1
+  local cache=${XDG_CACHE_HOME:-$HOME/.cache}/gradle-purifier/distributions
+  local name
+  name=$(basename "$(readlink -f "$zip")")
+  local dir=$cache/$name
+  if [ ! -d "$dir" ]; then
+    mkdir -p "$cache"
+    local tmp
+    tmp=$(mktemp -d "$cache/.unpack.XXXXXX")
+    unzip -q "$zip" -d "$tmp"
+    mv "$tmp" "$dir"
+  fi
+  local home
+  home=$(find "$dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+  [ -x "$home/bin/gradle" ] || die "$zip holds no bin/gradle"
+  printf '%s' "$home"
+}
+
+# Copies the build at the current directory to $1, leaving out version
+# control, Gradle's state, IDE files and the build directory of every
+# project.
+copy_build() {
+  local target=$1
+  local excludes=(--exclude=/.git --exclude=.gradle --exclude=.kotlin --exclude=.idea --exclude=/result*)
+  local script dir
+  while IFS= read -r script; do
+    dir=$(dirname "${script#./}")
+    if [ "$dir" = . ]; then excludes+=(--exclude=/build/); else excludes+=(--exclude="/$dir/build/"); fi
+  done < <(find . \( -name .git -o -name .gradle -o -name build -o -name node_modules \) -prune -o \
+    -type f \( -name 'build.gradle' -o -name 'build.gradle.kts' -o -name 'settings.gradle' -o -name 'settings.gradle.kts' \) -print)
+  mkdir -p "$target"
+  rsync -a --delete "${excludes[@]}" ./ "$target/"
+}
+
+lock_command() {
+  local relock=
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --relock) relock=1; shift ;;
+      --) shift; break ;;
+      -h | --help) usage; exit 0 ;;
+      *) die "lock takes --relock and, after --, gradle arguments; got $1" ;;
+    esac
+  done
+  local gradle_args=("$@")
+  require_build_root
+
+  local root=$PWD
+  local hash
+  hash=$(inputs_hash "${gradle_args[@]}")
+  if [ -z "$relock" ] && [ -f "$lockfile" ] && [ "$(jq -r '.inputsHash' "$lockfile")" = "$hash" ] \
+    && [ "$(jq -r '.version' "$lockfile")" = "$lock_version" ]; then
+    echo "gradle-purifier: $lockfile is current" >&2
+    return 0
+  fi
+
+  local url
+  url=$(distribution_url)
+  echo "gradle-purifier: fetching $url" >&2
+  local prefetch dist_hash dist_zip
+  prefetch=$(nix --extra-experimental-features nix-command store prefetch-file --json --hash-type sha256 "$url")
+  dist_hash=$(jq -r '.hash' <<<"$prefetch")
+  dist_zip=$(jq -r '.storePath' <<<"$prefetch")
+  local gradle_home
+  gradle_home=$(unpack_distribution "$dist_zip")
+
+  local work=$root/.gradle/purifier/lock-run
+  rm -rf "$work"
+  mkdir -p "$work"
+  copy_build "$work/build"
+
+  local records=$work/records.tsv
+  printf '%s\t%s\t%s\n' "$(tree_path "$url")" "$url" "$dist_hash" >"$records"
+  local java
+  java=$(java_home)
+  # Empty jdk.http.auth.*.disabledSchemes let the recorder send the Basic
+  # credentials of an https_proxy URL to the proxy, for HTTPS tunnels and
+  # for plain HTTP alike.
+  "$java/bin/java" -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes= \
+    -cp "$recorder" Recorder "$records" "$work/port" &
+  local recorder_pid=$!
+  # shellcheck disable=SC2064 # the PID is known now
+  trap "kill $recorder_pid 2>/dev/null || true" EXIT
+  local waited=0
+  while [ ! -f "$work/port" ]; do
+    kill -0 "$recorder_pid" 2>/dev/null || die "the recorder did not start"
+    [ $waited -lt 300 ] || die "the recorder did not start within 30 seconds"
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+  local base
+  base=http://127.0.0.1:$(cat "$work/port")
+
+  echo "gradle-purifier: running the lock build in $work/build" >&2
+  (
+    cd "$work/build" || exit 1
+    # Gradle's own HTTP client reaches only the recorder: a remote it
+    # contacts directly goes to a proxy that refuses, so a download the
+    # lock would miss fails here rather than in the sandbox.
+    GRADLE_USER_HOME=$work/gradle-home \
+      GRADLE_PURIFIER_MODE=lock \
+      GRADLE_PURIFIER_REPOSITORY=$base \
+      GRADLE_PURIFIER_OUTPUT=$work/output \
+      JAVA_HOME=$java \
+      "$gradle_home/bin/gradle" \
+      --init-script "$lib/purifier.init.gradle" \
+      --no-daemon --no-configuration-cache --no-build-cache --console=plain \
+      "-Dorg.gradle.internal.plugins.portal.url.override=$base/$portal" \
+      "-Djava.io.tmpdir=${TMPDIR:-/tmp}" \
+      -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=9 \
+      -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=9 \
+      '-Dhttp.nonProxyHosts=localhost|127.0.0.1' \
+      -Porg.gradle.java.installations.auto-download=false \
+      -Pkotlin.compiler.execution.strategy=in-process \
+      "${gradle_args[@]}" \
+      purifierLock </dev/null
+  )
+  kill "$recorder_pid" 2>/dev/null || true
+  wait "$recorder_pid" 2>/dev/null || true
+  trap - EXIT
+
+  [ -f "$work/output/projects.json" ] || die "the lock build wrote no projects.json"
+  local args_json
+  args_json=$(jq -n '$ARGS.positional' --args -- "${gradle_args[@]}")
+  jq -n \
+    --argjson version "$lock_version" \
+    --slurpfile described "$work/output/projects.json" \
+    --rawfile records "$records" \
+    --arg distribution "$(tree_path "$url")" \
+    --arg inputsHash "$hash" \
+    --argjson gradleArguments "$args_json" \
+    '{
+      version: $version,
+      gradleVersion: $described[0].gradleVersion,
+      javaVersion: $described[0].javaVersion,
+      distribution: $distribution,
+      gradleArguments: $gradleArguments,
+      inputsHash: $inputsHash,
+      projects: $described[0].projects,
+      artifacts: (
+        $records | split("\n") | map(select(length > 0) | split("\t")
+          | if .[1] == "inline" then {path: .[0], contents: (.[2] | @base64d)}
+            else {path: .[0], url: .[1], mirrors: [], hash: .[2]} end)
+        | unique_by(.path)
+      )
+    }' >"$root/$lockfile.tmp"
+  mv "$root/$lockfile.tmp" "$root/$lockfile"
+  echo "gradle-purifier: wrote $lockfile ($(jq '.artifacts | length' "$root/$lockfile") downloads)" >&2
+}
+
+# Fetches the locked downloads through Nix, links them into
+# .gradle/purifier/repository, and prints the absolute path of that tree.
+realize() {
+  local state=$PWD/.gradle/purifier
+  mkdir -p "$state"
+  local args=(--arg lockFile "$PWD/$lockfile" --arg libDir "$lib")
+  nix-build --no-out-link --quiet "$lib/realize.nix" -A fetches "${args[@]}" >/dev/null
+  local manifest
+  manifest=$(nix-instantiate --eval --strict --json --read-write-mode "$lib/realize.nix" -A manifest "${args[@]}" | jq -r .)
+  nix-store --add-root "$state/gcroot" --realise "$manifest" >/dev/null
+  local tree=$state/repository
+  if [ "$(cat "$state/repository.manifest" 2>/dev/null)" != "$manifest" ]; then
+    rm -rf "$tree"
+    mkdir -p "$tree"
+    local rel target
+    while IFS=$'\t' read -r rel target; do
+      mkdir -p "$tree/$(dirname "$rel")"
+      ln -s "$target" "$tree/$rel"
+    done < <(jq -r 'to_entries[] | "\(.key)\t\(.value)"' "$manifest")
+    echo "$manifest" >"$state/repository.manifest"
+  fi
+  printf '%s' "$tree"
+}
+
+# Succeeds when the lockfile exists, has this command's format, and was
+# made from the current build definition. Otherwise it says why on stderr,
+# followed by $1, and fails.
+lock_is_current() {
+  local consequence=$1
+  if [ ! -f "$lockfile" ]; then
+    echo "gradle-purifier: the build has no $lockfile; run 'gradle-purifier lock'. $consequence" >&2
+    return 1
+  fi
+  local locked_args=()
+  mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
+  if [ "$(jq -r '.version' "$lockfile")" != "$lock_version" ]; then
+    echo "gradle-purifier: $lockfile has another lock format; run 'gradle-purifier lock --relock'. $consequence" >&2
+    return 1
+  fi
+  if [ "$(jq -r '.inputsHash' "$lockfile")" != "$(inputs_hash "${locked_args[@]}")" ]; then
+    echo "gradle-purifier: the build definition changed since $lockfile was made; run 'gradle-purifier lock'. $consequence" >&2
+    return 1
+  fi
+}
+
+# Runs the Gradle of the lock on the locked downloads, in the init
+# script's mode $1, with the gradle arguments that follow. The variables
+# of the environment pass on to Gradle.
+run_locked_gradle() {
+  local mode=$1
+  shift
+  local tree
+  tree=$(realize)
+  local gradle_home
+  gradle_home=$(unpack_distribution "$tree/$(jq -r '.distribution' "$lockfile")")
+  local locked_args=()
+  mapfile -t locked_args < <(jq -r '.gradleArguments[]' "$lockfile")
+  JAVA_HOME=$(java_home) \
+    GRADLE_PURIFIER_MODE=$mode \
+    GRADLE_PURIFIER_REPOSITORY=file://$tree \
+    exec "$gradle_home/bin/gradle" \
+    --offline \
+    --init-script "$lib/purifier.init.gradle" \
+    "-Dorg.gradle.internal.plugins.portal.url.override=file://$tree/$portal" \
+    "${locked_args[@]}" \
+    "$@"
+}
+
+run_command() {
+  require_build_root
+  if [ -f "$lockfile" ] || [ ! -x ./gradlew ]; then
+    if lock_is_current "Gradle runs the usual way."; then
+      run_locked_gradle interactive "$@"
+    fi
+  fi
+  [ -x ./gradlew ] || die "the build has no current $lockfile and no ./gradlew"
+  exec ./gradlew "$@"
+}
+
+# Builds the package of every publishing project with Nix, and runs the
+# build's publish tasks (`publish`, or the gradle arguments given) with
+# those packages' files in place of the ones Gradle would make.
+publish_command() {
+  require_build_root
+  lock_is_current "Nothing is published." || exit 1
+  local state=$PWD/.gradle/purifier/published
+  mkdir -p "$state"
+  local artifacts='{}' id out
+  while IFS= read -r id; do
+    echo "gradle-purifier: building $id with Nix" >&2
+    out=$(nix-build "$lib/publish.nix" --argstr nixpkgs "$nixpkgs" --argstr src "$PWD" -A "$id" --out-link "$state/$id")
+    artifacts=$(jq --arg id "$id" --arg out "$out" '. + {($id): $out}' <<<"$artifacts")
+  done < <(jq -r '.projects[] | select(.publications != []) | .id' "$lockfile")
+  [ $# -gt 0 ] || set -- publish
+  # The init script disables the task that generates each publication's
+  # Gradle module metadata, so Gradle does not publish its output, and
+  # publishes the module metadata Nix built instead. Gradle still runs the
+  # dependencies of a disabled task, which compile and package the
+  # project; excluding the task with -x leaves them out.
+  local excluded=()
+  mapfile -t excluded < <(jq -r '.projects[] | (if .path == ":" then "" else .path end) as $p
+    | .publications[] | "-x", "\($p):generateMetadataFileFor\(.name[0:1] | ascii_upcase)\(.name[1:])Publication"' "$lockfile")
+  GRADLE_PURIFIER_ARTIFACTS=$artifacts run_locked_gradle publish "${excluded[@]}" "$@"
+}
+
+case ${1:-} in
+  lock) shift; lock_command "$@" ;;
+  publish) shift; publish_command "$@" ;;
+  -h | --help) usage ;;
+  *) run_command "$@" ;;
+esac

@@ -1,0 +1,260 @@
+// SPDX-License-Identifier: MIT
+//
+// The init script of gradle-purifier. The gradle-purifier command and the
+// Nix builder (build-gradle-project.nix) pass it to Gradle with
+// --init-script, and environment variables select what it does:
+//
+//   GRADLE_PURIFIER_MODE        lock, sandbox, interactive or publish;
+//                               without it the script does nothing
+//   GRADLE_PURIFIER_REPOSITORY  the base URL that stands in for every
+//                               remote repository: the recorder's
+//                               http://127.0.0.1:<port> in a lock run, and
+//                               a file: URL of the tree of locked downloads
+//                               otherwise
+//   GRADLE_PURIFIER_OUTPUT      the directory the lock and sandbox modes
+//                               write to
+//   GRADLE_PURIFIER_CHECK       "1" makes purifierBuild run `check` too
+//   GRADLE_PURIFIER_ARTIFACTS   in publish mode, a JSON object from project
+//                               id to the Maven output of its Nix package
+//
+// A remote repository at https://host/path is read from
+// <base>/https/host/path. The recorder fetches each such URL from its
+// remote and records it, and the tree of locked downloads holds each file
+// at the same path, so the lock run and the builds from the lockfile
+// resolve through the same URLs.
+//
+// Gradle applies an init script to every build of a composite, buildSrc
+// and included builds as well as the root build, so every build resolves
+// through the stand-in. The purifier tasks belong to the root build only.
+
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.artifacts.repositories.UrlArtifactRepository
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import org.gradle.api.tasks.Sync
+
+def mode = System.getenv('GRADLE_PURIFIER_MODE')
+if (mode == null || mode.isEmpty()) {
+    return
+}
+if (!(mode in ['lock', 'sandbox', 'interactive', 'publish'])) {
+    throw new GradleException("gradle-purifier: GRADLE_PURIFIER_MODE is '${mode}'; it must be lock, sandbox, interactive or publish")
+}
+def base = System.getenv('GRADLE_PURIFIER_REPOSITORY')
+if (base == null || base.isEmpty()) {
+    throw new GradleException('gradle-purifier: GRADLE_PURIFIER_MODE is set but GRADLE_PURIFIER_REPOSITORY is not')
+}
+def output = System.getenv('GRADLE_PURIFIER_OUTPUT')
+def runCheck = System.getenv('GRADLE_PURIFIER_CHECK') == '1'
+def rootBuild = gradle.parent == null
+
+// The stand-in URL of a remote URL. A URL that is not http or https, or
+// that already points at the stand-in (the plugin portal, which the
+// command line overrides), stays as it is, and the result is null.
+def standIn = { URI uri ->
+    if (uri == null || !(uri.scheme in ['http', 'https']) || uri.toString().startsWith(base)) {
+        return null
+    }
+    def authority = uri.port == -1 ? uri.host : "${uri.host}:${uri.port}"
+    return URI.create("${base}/${uri.scheme}/${authority}${uri.rawPath ?: ''}")
+}
+
+def purify = { repository ->
+    if (repository instanceof UrlArtifactRepository) {
+        def replaced = standIn(repository.url)
+        if (replaced != null) {
+            repository.url = replaced
+            // The recorder serves plain HTTP on the loopback address.
+            if (replaced.scheme == 'http') {
+                repository.allowInsecureProtocol = true
+            }
+        }
+    }
+    if (repository instanceof MavenArtifactRepository && !repository.artifactUrls.isEmpty()) {
+        repository.artifactUrls = repository.artifactUrls.collect { standIn(it) ?: it } as Set
+    }
+}
+
+// The name of a project in the lockfile and in the Nix builder: the root
+// project's name for the root project, and its path with ":" as "-"
+// otherwise.
+def idOf = { project ->
+    project.path == ':' ? project.rootProject.name : project.path.substring(1).replace(':', '-')
+}
+
+beforeSettings { settings ->
+    settings.pluginManagement.repositories.all(purify)
+    settings.buildscript.repositories.all(purify)
+    settings.dependencyResolutionManagement.repositories.all(purify)
+}
+
+allprojects { project ->
+    project.buildscript.repositories.all(purify)
+    project.repositories.all(purify)
+
+    if (!rootBuild || mode == 'interactive' || mode == 'publish') {
+        return
+    }
+
+    def outputDir = new File(output, idOf(project))
+
+    // Every publication publishes into the output as well, through the
+    // `purifier` repository; the Nix build copies it from there.
+    project.pluginManager.withPlugin('maven-publish') {
+        project.publishing.repositories.maven { repository ->
+            repository.name = 'purifier'
+            repository.url = new File(outputDir, 'maven').toURI()
+        }
+    }
+
+    // What a sandboxed package build of this project runs: the publishing
+    // of its publications, the installation of its application, and, with
+    // GRADLE_PURIFIER_CHECK=1, its checks.
+    project.tasks.register('purifierBuild') { task ->
+        task.group = 'gradle-purifier'
+        task.description = 'Builds what the Nix package of this project holds.'
+        task.dependsOn(project.tasks.matching { t ->
+            t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall'] ||
+                (runCheck && t.name == 'check')
+        })
+    }
+    project.pluginManager.withPlugin('application') {
+        project.tasks.register('purifierInstall', Sync) { task ->
+            task.from(project.tasks.named('installDist'))
+            task.into(new File(outputDir, 'application'))
+        }
+    }
+
+    if (mode != 'lock') {
+        return
+    }
+
+    // Resolves every resolvable configuration of the project, the
+    // buildscript's too, so the lock holds what a task the lock run does
+    // not run would resolve. Resolution is lenient: a configuration that
+    // does not resolve on its own takes no part.
+    def configurations = project.configurations
+    def scriptConfigurations = project.buildscript.configurations
+    project.tasks.register('purifierResolveAll') { task ->
+        task.doLast {
+            (scriptConfigurations + configurations).findAll { it.canBeResolved }.each { configuration ->
+                try {
+                    configuration.incoming.artifactView { it.lenient(true) }.files.files
+                } catch (Exception e) {
+                    task.logger.info("gradle-purifier: ${configuration.name} did not resolve: ${e.message}")
+                }
+            }
+        }
+    }
+
+    // The lock run: everything a package build with checks runs, for
+    // every project, so its downloads hold what any package build needs.
+    if (project == project.rootProject) {
+        project.tasks.register('purifierLock') { task ->
+            task.group = 'gradle-purifier'
+            task.description = 'Runs every package build with its checks, for the lockfile.'
+            task.dependsOn {
+                project.rootProject.allprojects.collect { p ->
+                    p.tasks.matching { t ->
+                        t.name in ['build', 'purifierBuild', 'purifierResolveAll']
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Publish mode: every Maven publication of the root build publishes the
+// files its Nix package holds, in place of the ones the build would make.
+// The publications then depend on no task that compiles or packages, so
+// the build's own publish tasks send what Nix built, with the repositories
+// and credentials the build configures. A publication's Gradle module
+// metadata is the one Nix built too.
+if (rootBuild && mode == 'publish') {
+    def built = new groovy.json.JsonSlurper().parseText(System.getenv('GRADLE_PURIFIER_ARTIFACTS') ?: '{}')
+    gradle.projectsEvaluated { g ->
+        g.rootProject.allprojects.each { project ->
+            def publishing = project.extensions.findByName('publishing')
+            if (publishing == null) {
+                return
+            }
+            publishing.publications.withType(MavenPublication).each { publication ->
+                def dir = built[idOf(project)]
+                if (dir == null) {
+                    throw new GradleException("gradle-purifier: the lockfile has no package of ${project.path}, which publishes ${publication.name}; run gradle-purifier lock")
+                }
+                def links = new File(dir, "nix-support/artifacts/${publication.name}")
+                def replacements = publication.artifacts.collect { a ->
+                    def classifier = a.classifier ?: null
+                    def key = "${publication.artifactId}${classifier ? '-' + classifier : ''}.${a.extension}"
+                    def file = new File(links, key)
+                    if (!file.isFile()) {
+                        throw new GradleException("gradle-purifier: the Nix package of ${project.path} holds no ${publication.name}/${key}; run gradle-purifier lock")
+                    }
+                    [file: file, classifier: classifier, extension: a.extension]
+                }
+                def module = new File(links, 'module')
+                publication.artifacts = []
+                replacements.each { r ->
+                    publication.artifact(r.file) { artifact ->
+                        artifact.classifier = r.classifier
+                        artifact.extension = r.extension
+                    }
+                }
+                project.tasks.withType(GenerateModuleMetadata).matching {
+                    it.name == "generateMetadataFileFor${publication.name.capitalize()}Publication".toString()
+                }.configureEach { it.enabled = false }
+                if (module.isFile()) {
+                    publication.artifact(module) { artifact ->
+                        artifact.extension = 'module'
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The projects of the lock: every project of the root build with a Maven
+// publication or an application, and what each publishes. The lock run
+// writes them to projects.json in the output, for the command to put in
+// the lockfile.
+if (rootBuild && mode == 'lock') {
+    gradle.projectsEvaluated { g ->
+        def projects = g.rootProject.allprojects.collect { project ->
+            def publications = []
+            def publishing = project.extensions.findByName('publishing')
+            if (publishing != null) {
+                publishing.publications.withType(MavenPublication).each { publication ->
+                    publications << [
+                        name      : publication.name,
+                        groupId   : publication.groupId,
+                        artifactId: publication.artifactId,
+                        artifacts : publication.artifacts.collect { a ->
+                            def classifier = a.classifier ?: null
+                            [
+                                key       : "${publication.artifactId}${classifier ? '-' + classifier : ''}.${a.extension}".toString(),
+                                classifier: classifier,
+                                extension : a.extension,
+                            ]
+                        }.sort { it.key },
+                    ]
+                }
+            }
+            def application = project.extensions.findByName('application')
+            [
+                id          : idOf(project),
+                path        : project.path,
+                publications: publications.sort { it.name },
+                application : application == null ? null : [name: application.applicationName],
+            ]
+        }.findAll { !it.publications.isEmpty() || it.application != null }
+        def file = new File(output, 'projects.json')
+        file.parentFile.mkdirs()
+        file.text = JsonOutput.prettyPrint(JsonOutput.toJson([
+            gradleVersion: g.gradleVersion,
+            javaVersion  : System.getProperty('java.version'),
+            projects     : projects.sort { it.id },
+        ]))
+    }
+}

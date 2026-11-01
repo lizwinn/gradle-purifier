@@ -1,0 +1,4 @@
+rootProject.name = 'greeting'
+
+// A library from an included build, which substitutes example:shout.
+includeBuild 'shout'

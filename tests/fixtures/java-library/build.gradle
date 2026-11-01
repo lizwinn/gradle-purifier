@@ -1,0 +1,73 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'example'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    // An Ivy repository that serves plain files by pattern, the way the
+    // Kotlin plugin fetches Node.js.
+    ivy {
+        name = 'nodejs'
+        url = 'https://nodejs.org/dist'
+        patternLayout {
+            artifact 'v[revision]/[artifact].[ext]'
+        }
+        metadataSources {
+            artifact()
+        }
+        content {
+            includeModule 'org.nodejs', 'SHASUMS256'
+        }
+    }
+}
+
+configurations {
+    nodeChecksums {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+java {
+    withSourcesJar()
+}
+
+dependencies {
+    // A dynamic version, which Gradle resolves through maven-metadata.xml.
+    implementation 'org.apache.commons:commons-lang3:3.17.+'
+    implementation 'example:shout:1.0.0'
+    nodeChecksums 'org.nodejs:SHASUMS256:20.11.0@txt'
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// The file from the Ivy repository ships as a resource.
+processResources {
+    from(configurations.nodeChecksums) {
+        rename { 'node-checksums.txt' }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        // Where the interactive tests publish to.
+        maven {
+            name = 'local'
+            url = layout.buildDirectory.dir('local-repository')
+        }
+    }
+}
