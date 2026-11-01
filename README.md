@@ -1,121 +1,53 @@
 # gradle-purifier
 
-gradle-purifier locks the downloads of a Gradle build and builds it in the
-Nix sandbox. It works with Java and Kotlin builds, in the Groovy and the
-Kotlin DSL, on Gradle 8 and 9, including Kotlin Multiplatform with JVM
-and Kotlin/Native targets. Gradle still plans and runs the build. The
-purifier records every file Gradle downloads in a lockfile, by URL and
-SHA-256, and Nix fetches those files and runs the build offline. The
-lockfile also names the projects and their outputs, so a flake knows
-every package without generated Nix files.
+gradle-purifier keeps Gradle's development workflow on locked,
+Nix-resolved dependencies. Use the normal build and test commands in your
+working tree; building the project itself in the Nix sandbox is an
+optional next step.
+
+It follows the [purifier contract](https://github.com/nix-purifiers/purifier/blob/main/CONTRACT.md).
 
 It is one of the [nix-purifiers](https://nix-purifiers.github.io), and it
 meets their shared contract: the same builder, commands, checks and
 README sections as every other purifier.
 
+## Installation
+
+Install the integration into your Nix profile once:
+
+```sh
+nix profile install 'github:nix-purifiers/gradle-purifier'
+```
+
+This installs the purifier CLI. The workflow below prepares the native
+tool's cache, hook or environment; follow that activation step before using
+your usual commands. The ordinary tool itself remains your normal
+installation unless the setup explicitly supplies a toolchain.
+
+`nix shell` makes an integration available temporarily instead of installing
+it. Keep using the activation steps below where a project environment or
+prefetched cache is required.
+
 ## Quickstart
 
-The build needs a Gradle wrapper (`gradle/wrapper/gradle-wrapper.properties`);
-the purifier runs the distribution that the wrapper names. Lock the build
-from its root:
+Install Nix, then run the following from your existing project's root.
+The setup prepares the locked dependencies and the integration that
+Gradle's normal commands use:
 
 ```zsh
 nix run github:nix-purifiers/gradle-purifier -- lock
+nix run github:nix-purifiers/gradle-purifier -- prefetch
+./gradlew build
 ```
 
-Commit `gradle-purifier.lock.json` to the repository, together with
-Gradle's own lockfiles when the build uses its dependency locking.
-Keeping both lockfiles in the repository is the default setup, and the
-one we recommend.
+Commit the lockfiles that the lock command writes, including the build
+tool's own lockfile when it has one. Keep using the project's usual build,
+test and editor commands with this setup. Nix provides the locked
+dependencies; the development commands above run outside the Nix sandbox.
+No project Nix files are needed for this workflow.
 
-The flake's `overlays.default` adds one attribute to the package set, the
-scope `gradle-purifier`. The scope holds the builder `buildGradleProject`
-and the `gradle-purifier` command. Build from the project's directory,
-without adding a Nix file. Replace `app` with the project to build:
-
-```zsh
-nix build --impure --expr '
-  let
-    purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
-    pkgs = import purifier.inputs.nixpkgs {
-      system = builtins.currentSystem;
-      overlays = [ purifier.overlays.default ];
-    };
-  in
-  (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app'
-```
-
-This uses the purifier's pinned nixpkgs, matching the lock command above.
-To build with ambient `<nixpkgs>` from your Nix search path instead,
-replace `import purifier.inputs.nixpkgs` with `import <nixpkgs>`.
-Both forms need no Nix files in your project. The build tool and language
-versions must match the lockfile; with ambient nixpkgs, lock with the
-purifier from that package set or pass a compatible toolchain to the builder.
-
-A flake is optional and can live in the project or in another repository:
-
-```nix
-# flake.nix
-{
-  inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
-  inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
-
-  outputs = { nixpkgs, gradle-purifier, ... }:
-    let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ gradle-purifier.overlays.default ];
-      };
-    in
-    {
-      packages.${system}.app =
-        (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app;
-    };
-}
-```
-
-`gradle-purifier.overrideScope` replaces what the scope shares. The
-builder takes what it needs from the package set by name, such as
-`javaPackages` and `stdenvNoCC`, and
-`gradle-purifier.buildGradleProject.override` replaces any of them. The
-builder's result has these attributes:
-
-- `packages.<id>` holds a package per project, named after the project:
-  the name of the root project for the root project, and the project path
-  with `-` for `:` otherwise (`:libs:core` is `libs-core`). Programs go
-  to `bin/` of `out`: the distribution of the `application` plugin, with
-  its start script set to run on the JDK of the build, and the release
-  executables of Kotlin/Native. The archives that `assemble` makes go to
-  `share/archives/` of `out`, named without the version of the project,
-  and `packages.<id>.archives."<key>"` is the path of one. Maven
-  publications go to the `maven` output, in Maven layout, with each
-  artifact linked without the version at
-  `nix-support/artifacts/<publication>/<artifactId>[-<classifier>].<ext>`,
-  and `packages.<id>.artifacts.<publication>."<key>"` is the path of one.
-- `tests` runs the `check` task of every project in the sandbox.
-- `release` holds the Maven output of every project with publications,
-  which `gradle-purifier publish` uploads.
-- `fetches` lists the downloads of the build as entries of the
-  nix-purifiers library, for SBOM, license and vulnerability tools.
-
-The builder takes these arguments besides `src`, the root of the build:
-
-- `lockFile` is the lockfile; the default is `gradle-purifier.lock.json`
-  in `src`. A build kept external passes a lockfile from outside `src`,
-  and `src` then needs only the files of Gradle.
-- `fetchers` replaces the fetchers of the nix-purifiers library, such as
-  a `fetchurl` that sends credentials to a company repository.
-- `jdk` is the JDK that runs Gradle and the applications. The default is
-  the headless JDK of nixpkgs of the Java major version the lock was made
-  with.
-- `toolchainJdks` lists the JDKs for Java toolchains that ask for another
-  Java version. Gradle provisions no toolchain in the sandbox.
-- `doCheck` runs the `check` task of each project in its package build.
-- `srcFilter` filters the build root before it is copied into the store.
-
-`lib.gradle-purifier.readLock { src, lockFile }` reads the lock into the
-shape that every purifier shares: `entries`, `outputs` and `problems`.
+Sandboxed builds of the whole project are an optional
+[next step](#building-the-project-with-nix).
 
 ## Development loop
 
@@ -203,6 +135,103 @@ replaced by the files Nix built. The publishing repositories and
 credentials of the build apply, and nothing is compiled outside the
 sandbox. Gradle generates the POM from the build, as it does for any
 publish.
+
+## Building the project with Nix
+
+Once the native development workflow is working, you can also build and
+test the whole project in the Nix sandbox. For this step, keep a flake or
+another Nix build definition in the project's repository, or maintain an
+external packaging repository that points at its sources and lockfiles.
+The builder consumes the same lockfiles as the development workflow.
+
+A flake is optional and can live in the project or in another repository:
+
+```nix
+# flake.nix
+{
+  inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
+  inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
+
+  outputs = { nixpkgs, gradle-purifier, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ gradle-purifier.overlays.default ];
+      };
+    in
+    {
+      packages.${system}.app =
+        (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app;
+    };
+}
+```
+
+`gradle-purifier.overrideScope` replaces what the scope shares. The
+builder takes what it needs from the package set by name, such as
+`javaPackages` and `stdenvNoCC`, and
+`gradle-purifier.buildGradleProject.override` replaces any of them. The
+builder's result has these attributes:
+
+- `packages.<id>` holds a package per project, named after the project:
+  the name of the root project for the root project, and the project path
+  with `-` for `:` otherwise (`:libs:core` is `libs-core`). Programs go
+  to `bin/` of `out`: the distribution of the `application` plugin, with
+  its start script set to run on the JDK of the build, and the release
+  executables of Kotlin/Native. The archives that `assemble` makes go to
+  `share/archives/` of `out`, named without the version of the project,
+  and `packages.<id>.archives."<key>"` is the path of one. Maven
+  publications go to the `maven` output, in Maven layout, with each
+  artifact linked without the version at
+  `nix-support/artifacts/<publication>/<artifactId>[-<classifier>].<ext>`,
+  and `packages.<id>.artifacts.<publication>."<key>"` is the path of one.
+- `tests` runs the `check` task of every project in the sandbox.
+- `release` holds the Maven output of every project with publications,
+  which `gradle-purifier publish` uploads.
+- `fetches` lists the downloads of the build as entries of the
+  nix-purifiers library, for SBOM, license and vulnerability tools.
+
+The builder takes these arguments besides `src`, the root of the build:
+
+- `lockFile` is the lockfile; the default is `gradle-purifier.lock.json`
+  in `src`. A build kept external passes a lockfile from outside `src`,
+  and `src` then needs only the files of Gradle.
+- `fetchers` replaces the fetchers of the nix-purifiers library, such as
+  a `fetchurl` that sends credentials to a company repository.
+- `jdk` is the JDK that runs Gradle and the applications. The default is
+  the headless JDK of nixpkgs of the Java major version the lock was made
+  with.
+- `toolchainJdks` lists the JDKs for Java toolchains that ask for another
+  Java version. Gradle provisions no toolchain in the sandbox.
+- `doCheck` runs the `check` task of each project in its package build.
+- `srcFilter` filters the build root before it is copied into the store.
+
+`lib.gradle-purifier.readLock { src, lockFile }` reads the lock into the
+shape that every purifier shares: `entries`, `outputs` and `problems`.
+
+### One-off builds without a project Nix file
+
+For an ad hoc build, the builder can also be evaluated directly from the
+project root. Replace the example package name with one from your project:
+
+```zsh
+nix build --impure --expr '
+  let
+    purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
+    pkgs = import purifier.inputs.nixpkgs {
+      system = builtins.currentSystem;
+      overlays = [ purifier.overlays.default ];
+    };
+  in
+  (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app'
+```
+
+This uses the purifier's pinned nixpkgs, matching the lock command above.
+To build with ambient `<nixpkgs>` from your Nix search path instead,
+replace `import purifier.inputs.nixpkgs` with `import <nixpkgs>`.
+Both forms need no Nix files in your project. The build tool and language
+versions must match the lockfile; with ambient nixpkgs, lock with the
+purifier from that package set or pass a compatible toolchain to the builder.
 
 ## Working offline
 
@@ -294,6 +323,11 @@ a lock can be made from a repository that needs credentials. The Nix
 build then needs a `fetchers.fetchurl` that supplies them.
 
 ## Examples
+
+For day-to-day work on these projects, use the native-tool setup and
+commands in [Quickstart](#quickstart) and [Development loop](#development-loop).
+The Nix expressions below show optional sandboxed packaging of those
+projects.
 
 [Spring PetClinic](https://github.com/spring-projects/spring-petclinic)
 is a Spring Boot application with a Gradle wrapper and a Java 17
