@@ -1,19 +1,14 @@
 # SPDX-License-Identifier: MIT
 #
-# The `gradle-purifier` library namespace: the builder
-# lib.gradle-purifier.buildGradleProject (nix/lib/build-gradle-project.nix),
-# with the nix-purifiers library that this flake pins, and
-# lib.gradle-purifier.readLock (nix/lib/read-lock.nix), the lock in memory
-# that the nix-purifiers contract describes.
+# The `gradle-purifier` library namespace: lib.gradle-purifier.readLock
+# (nix/lib/read-lock.nix), the lock in memory that the contract of the
+# nix-purifiers describes. The builder needs a package set, so it is the
+# package `buildGradleProject` that the default package overlay adds.
 { closure-lib, ... }:
 {
 
   overlay = final: prev: {
     gradle-purifier = (prev.gradle-purifier or { }) // {
-      buildGradleProject = import ../../nix/lib/build-gradle-project.nix {
-        lib = closure-lib;
-        inherit (closure-lib) purifier;
-      };
       readLock = import ../../nix/lib/read-lock.nix { lib = closure-lib; };
     };
   };

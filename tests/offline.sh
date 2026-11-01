@@ -19,7 +19,14 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 command=$(nix build --no-link --print-out-paths "$root#gradle-purifier")/bin/gradle-purifier
 work=$(mktemp -d "${TMPDIR:-/tmp}/gradle-purifier-offline.XXXXXX")
-trap 'rm -rf "$work"' EXIT
+# The IDE import starts a Gradle daemon, which outlives the test and
+# writes into its Gradle user home; it stops before the directory goes.
+cleanup() {
+  pkill -f -- "$work" 2>/dev/null || true
+  sleep 1
+  rm -rf "$work"
+}
+trap cleanup EXIT
 
 export XDG_CACHE_HOME=$work/cache
 refusing_proxy="-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=9 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=9"

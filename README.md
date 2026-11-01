@@ -23,9 +23,18 @@ from its root, and commit `gradle-purifier.lock.json`:
 nix run github:nix-purifiers/gradle-purifier -- lock
 ```
 
-Then build it with Nix through `lib.gradle-purifier.buildGradleProject`:
+The flake's `overlays.default` adds the builder `buildGradleProject` to
+the package set, beside the builders of nixpkgs. A package written for
+`callPackage` takes it by name:
 
 ```nix
+# package.nix
+{ buildGradleProject }:
+(buildGradleProject { src = ./.; }).packages.app
+```
+
+```nix
+# flake.nix
 {
   inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
   inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
@@ -33,20 +42,20 @@ Then build it with Nix through `lib.gradle-purifier.buildGradleProject`:
   outputs = { nixpkgs, gradle-purifier, ... }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-      build = gradle-purifier.lib.gradle-purifier.buildGradleProject {
-        inherit pkgs;
-        src = ./.;
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ gradle-purifier.overlays.default ];
       };
     in
     {
-      packages.${system}.app = build.packages.app;
-      checks.${system}.tests = build.tests;
+      packages.${system}.app = pkgs.callPackage ./package.nix { };
     };
 }
 ```
 
-The result of `buildGradleProject` has these attributes:
+`buildGradleProject` takes what it needs from the package set by name,
+such as `javaPackages` and `stdenvNoCC`, and `buildGradleProject.override`
+replaces any of them. Its result has these attributes:
 
 - `packages.<id>` holds a package per project, named after the project:
   the name of the root project for the root project, and the project path
@@ -66,7 +75,7 @@ The result of `buildGradleProject` has these attributes:
 - `fetches` lists the downloads of the build as entries of the
   nix-purifiers library, for SBOM, license and vulnerability tools.
 
-The builder takes these arguments besides `pkgs` and `src`:
+The builder takes these arguments besides `src`, the root of the build:
 
 - `lockFile` is the lockfile; the default is `gradle-purifier.lock.json`
   in `src`. A build kept external passes a lockfile from outside `src`,
@@ -84,7 +93,7 @@ The builder takes these arguments besides `pkgs` and `src`:
 `lib.gradle-purifier.readLock { src, lockFile }` reads the lock into the
 shape that every purifier shares: `entries`, `outputs` and `problems`.
 
-## Everyday loop
+## Development loop
 
 After each lock, run `prefetch` at the build root:
 
@@ -134,7 +143,7 @@ These are the commands:
   uses Gradle's dependency locking, it runs Gradle with `--write-locks`,
   or `--update-locks` for the packages named, and writes Gradle's
   lockfiles back into the build.
-- `gradle-purifier prefetch` prepares the everyday loop, as above.
+- `gradle-purifier prefetch` prepares the development loop, as above.
 - `gradle-purifier publish` uploads the `release` that Nix built (see
   below).
 
@@ -157,7 +166,7 @@ credentials of the build apply, and nothing is compiled outside the
 sandbox. Gradle generates the POM from the build, as it does for any
 publish.
 
-## Offline work
+## Working offline
 
 After `prefetch`, `./gradlew`, a Gradle on the `PATH` and an IDE build
 with the network cut off. Gradle reads the locked files from the Nix
@@ -174,7 +183,7 @@ finds them in the lock. An IDE set to use the Gradle wrapper finds the
 distribution that `prefetch` linked. One set to a local distribution can
 use `.gradle-purifier/distribution` beside the lockfile.
 
-## Errors and fixes
+## Troubleshooting
 
 Every problem with a lockfile fails in the command and at Nix evaluation,
 with a message that names the fix.
@@ -189,7 +198,7 @@ with a message that names the fix.
 | A dynamic version asks for a version the lock never saw | "a dynamic version asks for a version that the version listings of the lockfile do not have" | `gradle-purifier update <group>:<artifact>` |
 | The lockfile changed since the last prefetch | "changed since 'gradle-purifier prefetch' ran" | `gradle-purifier prefetch` |
 
-## Sources supported and refused
+## Supported language repositories
 
 The lock records every download through Gradle's repositories: Maven and
 Ivy repositories of settings scripts, of `pluginManagement`, of
@@ -255,9 +264,16 @@ nix run github:nix-purifiers/gradle-purifier -- lock --java 17
 git add gradle-purifier.lock.json
 ```
 
-A `flake.nix` at the root of the clone builds it:
+A `package.nix` and a `flake.nix` at the root of the clone build it:
 
 ```nix
+# package.nix
+{ buildGradleProject }:
+(buildGradleProject { src = ./.; }).packages.spring-petclinic
+```
+
+```nix
+# flake.nix
 {
   inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
   inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
@@ -265,15 +281,13 @@ A `flake.nix` at the root of the clone builds it:
   outputs = { nixpkgs, gradle-purifier, ... }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-      build = gradle-purifier.lib.gradle-purifier.buildGradleProject {
-        inherit pkgs;
-        src = ./.;
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ gradle-purifier.overlays.default ];
       };
     in
     {
-      packages.${system}.default = build.packages.spring-petclinic;
-      checks.${system}.tests = build.tests;
+      packages.${system}.default = pkgs.callPackage ./package.nix { };
     };
 }
 ```
@@ -285,7 +299,7 @@ nix build
 java -jar result/share/archives/spring-petclinic.jar
 ```
 
-For the everyday loop, `prefetch` sets up the wrapper, and the usual
+For the development loop, `prefetch` sets up the wrapper, and the usual
 commands work offline:
 
 ```zsh

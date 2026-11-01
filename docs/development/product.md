@@ -23,11 +23,14 @@ describes what it does for a user.
   lockfile pins.
 - The command (`src/gradle-purifier.sh`, packaged by `pkgs/gradle-purifier`):
   `lock`, `update`, `prefetch` and `publish`.
-- The Nix library (`nix/lib`), published as `lib.gradle-purifier`:
-  `buildGradleProject` and `readLock`. The builder takes the fetchers and
-  the tree of locked downloads from the shared nix-purifiers library. The
-  command builds through `nix/lib/command.nix`, which applies the same
-  builder, so the command and the flake check a lockfile alike.
+- The Nix library (`nix/lib`). The builder
+  (`nix/lib/build-gradle-project.nix`) is a package for `callPackage`,
+  which the default package overlay adds to the package set as
+  `buildGradleProject`. It takes the fetchers and the tree of locked
+  downloads from the shared nix-purifiers library. `readLock` is in
+  `lib.gradle-purifier`. The command builds through `nix/lib/command.nix`,
+  which calls the same builder, so the command and the flake check a
+  lockfile alike.
 - The lockfile format (`nix/lib/read-lock.nix`, and the `jq` program of
   `lock` in the command), versioned by its `version` field and sealed by
   its `contentHash`. A file entry is `{ url, hash }` and an inline entry
@@ -51,7 +54,7 @@ describes what it does for a user.
   the lock run writes only the lockfile.
 - **One path per URL.** A download of `https://host/path` is at
   `https/host/path` in the tree of locked downloads, so the lock run, the
-  sandbox and the everyday loop resolve through the same URLs.
+  sandbox and the development loop resolve through the same URLs.
 
 ## Not in scope
 

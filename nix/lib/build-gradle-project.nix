@@ -1,12 +1,17 @@
 # buildGradleProject: the sandboxed builds of a Gradle build, from the
 # lockfile `gradle-purifier lock` writes.
 #
-# The flake publishes it as lib.gradle-purifier.buildGradleProject, with
-# the nix-purifiers library that its flake pins:
+# The file is a package for callPackage: the first argument set is what it
+# takes from the package set, and the result is the builder. The flake's
+# default package overlay (`overlays.default`) adds it to the package set
+# as `buildGradleProject`, with the nix-purifiers library that the flake
+# pins, so a package written for callPackage takes it like any other
+# builder:
 #
-#   lib.gradle-purifier.buildGradleProject { inherit pkgs; src = ./.; }
+#   { buildGradleProject }: (buildGradleProject { src = ./.; }).packages.app
 #
-# The result is
+# and `buildGradleProject.override` replaces what it takes from the set.
+# The builder returns
 #
 #   packages.<id>  a package per project the lock names. Its `out` holds
 #                  the programs (an installed application, with bin/ and
@@ -26,11 +31,23 @@
 # toolchain) and `jdk`.
 {
   lib,
-  # The nix-purifiers library (lib.purifier).
+  stdenv,
+  stdenvNoCC,
+  makeWrapper,
+  unzip,
+  zlib,
+  linkFarm,
+  runCommand,
+  fetchurl,
+  callPackage,
+  # The JDKs a build can run on; the default JDK of a build is the headless
+  # one of the Java major version its lock was made with.
+  javaPackages,
+  # The nix-purifiers library, which fetches the locked downloads and lays
+  # them out; the overlay passes the one that the flake pins.
   purifier,
 }:
 {
-  pkgs,
   # The root of the Gradle build.
   src,
   # The lockfile. The default is the one `gradle-purifier lock` writes at
@@ -54,13 +71,9 @@
   srcFilter ? null,
 }:
 let
-  inherit (pkgs)
-    stdenv
-    stdenvNoCC
-    makeWrapper
-    unzip
-    zlib
-    ;
+  # The library's fetchers and tree take nixpkgs' fetchurl and runCommand
+  # from this set; the build fetches only files and inline entries.
+  fetcherPkgs = { inherit fetchurl runCommand; };
 
   # The lock in memory (read-lock.nix). checkLock fails evaluation with
   # its problems: a stale, tampered, malformed or incomplete lockfile.
@@ -115,16 +128,16 @@ let
       src;
 
   defaultJdk =
-    pkgs.javaPackages.compiler."openjdk${toString gradle.javaMajor}".headless
+    javaPackages.compiler."openjdk${toString gradle.javaMajor}".headless
       or (throw "gradle-purifier: javaPackages has no openjdk${toString gradle.javaMajor} for the Java the lock was made with; pass `jdk`.");
   jdk' = if jdk != null then jdk else defaultJdk;
   javaHome = j: j.home or "${j}/lib/openjdk";
 
-  fetchEntry = purifier.fetchEntry ({ inherit pkgs; } // fetchers);
+  fetchEntry = purifier.fetchEntry ({ pkgs = fetcherPkgs; } // fetchers);
 
   repository = purifier.tree (
     {
-      inherit pkgs;
+      pkgs = fetcherPkgs;
       name = "gradle-purifier-repository";
       inherit entries;
     }
@@ -132,7 +145,7 @@ let
   );
 
   # Kotlin/Native's toolchain, when the lock holds one (see konan.nix).
-  konan = pkgs.callPackage ./konan.nix {
+  konan = callPackage ./konan.nix {
     archives = map (entry: {
       name = lib.removeSuffix ".tar.gz" (baseNameOf entry.path);
       src = fetchEntry entry;
@@ -391,7 +404,7 @@ let
 
   # What `gradle-purifier publish` uploads: the Maven output of every
   # project with publications, by project id.
-  release = pkgs.linkFarm "${gradle.rootProjectName}-release" (
+  release = linkFarm "${gradle.rootProjectName}-release" (
     lib.mapAttrsToList (id: package: {
       name = id;
       path = package.maven;

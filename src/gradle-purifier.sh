@@ -68,7 +68,7 @@ Usage:
       lockfiles back into the build. It keeps the gradle arguments of the
       lock unless it is given others.
   gradle-purifier prefetch [--lockfile <path>]
-      Realizes in the Nix store everything the everyday loop and an IDE
+      Realizes in the Nix store everything the development loop and an IDE
       need: the locked downloads, the JDK, the Gradle distribution (where
       ./gradlew looks for it) and a Kotlin/Native toolchain. It installs an
       init script in the init.d of the Gradle user home that makes the

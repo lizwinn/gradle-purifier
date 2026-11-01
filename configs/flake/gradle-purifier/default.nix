@@ -61,6 +61,7 @@
           {
             checks = import ../../../tests {
               inherit pkgs;
+              overlay = self.overlays.default;
               gradlePurifier = self.lib.gradle-purifier;
               inherit (self.packages.${system}) gradle-purifier;
             };
