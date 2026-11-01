@@ -245,16 +245,20 @@ A lock run sends the `Authorization` header of a repository on to it, so
 a lock can be made from a repository that needs credentials. The Nix
 build then needs a `fetchers.fetchurl` that supplies them.
 
-## Real-world projects
+## Examples
 
-The fixtures in `tests/fixtures/` cover a Java library in the Groovy DSL
-with a dynamic version, an included build and an Ivy repository; a Kotlin
-build with a version catalog, a convention plugin in `buildSrc`, a
-Multiplatform library and an application; and a Kotlin/Native
-executable. Each builds in the sandbox on x86_64-linux and
-aarch64-linux, except the Kotlin/Native one, which builds on
-x86_64-linux. A fourth fixture, with Gradle's dependency locking, is the
-subject of the `conformance-update` CI job.
+CI locks and builds
+[Spring PetClinic](https://github.com/spring-projects/spring-petclinic),
+a Spring Boot application on Gradle 9 with a Java 17 toolchain. The
+`petclinic` check builds it from its source on GitHub and a lockfile
+kept outside that source, in `tests/real-world/`. The hand-started
+`lock-real-world` workflow makes that lockfile on a runner.
+
+The fixtures in `tests/fixtures/` show smaller builds. One is a Java
+library in the Groovy DSL with an included build and an Ivy repository.
+Another is a Kotlin build with a convention plugin in `buildSrc` and a
+Multiplatform library. There is also a Kotlin/Native executable, which
+builds on x86_64-linux only.
 
 ## Credits
 
