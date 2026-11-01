@@ -170,6 +170,29 @@ they are, so its own download cache stays empty. When the lockfile is
 missing, has another format, or was made from another build definition,
 the command says so and runs `./gradlew` instead.
 
+### IDEs
+
+An IDE imports a Gradle build with its own Gradle run, through the Gradle
+tooling API: IntelliJ IDEA, and Eclipse and VS Code through Buildship and
+jdtls. To have those runs read the locked downloads too, run this at the
+build root:
+
+```zsh
+nix run github:nix-purifiers/gradle-purifier -- ide
+```
+
+It realizes the lockfile, writes `.gradle/purifier/ide.properties`, and
+installs an init script in the `init.d` of the Gradle user home, which
+every Gradle build applies. The script points the builds of this root at
+the locked downloads, and leaves every other build alone. The lock run
+resolves the sources and the javadoc of every library, so an IDE that
+attaches them finds them in the lock. For an import with no download at
+all, set the IDE to the local Gradle distribution at
+`.gradle/purifier/gradle`, which the command links; otherwise the IDE
+downloads the wrapper's distribution once. Run `gradle-purifier ide` again
+after each lock; until then the script says so and the IDE resolves the
+usual way.
+
 ### Publishing
 
 ```zsh
@@ -238,8 +261,6 @@ Three things to know:
   header on to it, so a lock can be made from a repository that needs
   credentials. The Nix build downloads with the built-in fetcher, which
   has none; such a build needs a `fetchurl` that supplies them.
-- **IDEs.** An IDE that imports the build runs Gradle itself, through the
-  wrapper, and resolves the usual way.
 - **The configuration cache** is off in the lock run and in the sandbox,
   because the init script's tasks read the project model.
 - **Downloads in tasks.** A plugin that downloads with its own HTTP

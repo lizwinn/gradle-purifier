@@ -38,14 +38,21 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
 import org.gradle.api.tasks.Sync
 
-def mode = System.getenv('GRADLE_PURIFIER_MODE')
+// A setting comes from the environment, or else from the system property
+// of the same name in lower case with dots (gradle.purifier.mode), which
+// the IDE init script (ide.init.gradle) sets.
+def setting = { String name ->
+    System.getenv(name) ?: System.getProperty(name.toLowerCase().replace('_', '.'))
+}
+
+def mode = setting('GRADLE_PURIFIER_MODE')
 if (mode == null || mode.isEmpty()) {
     return
 }
 if (!(mode in ['lock', 'sandbox', 'interactive', 'publish'])) {
     throw new GradleException("gradle-purifier: GRADLE_PURIFIER_MODE is '${mode}'; it must be lock, sandbox, interactive or publish")
 }
-def base = System.getenv('GRADLE_PURIFIER_REPOSITORY')
+def base = setting('GRADLE_PURIFIER_REPOSITORY')
 if (base == null || base.isEmpty()) {
     throw new GradleException('gradle-purifier: GRADLE_PURIFIER_MODE is set but GRADLE_PURIFIER_REPOSITORY is not')
 }
@@ -226,15 +233,46 @@ allprojects { project ->
     // buildscript's too, so the lock holds what a task the lock run does
     // not run would resolve. Resolution is lenient: a configuration that
     // does not resolve on its own takes no part.
+    //
+    // An IDE that imports the build also asks for the sources and the
+    // javadoc of every library, which no task resolves, so it resolves
+    // those too.
     def configurations = project.configurations
     def scriptConfigurations = project.buildscript.configurations
+    def dependencyHandler = project.dependencies
     project.tasks.register('purifierResolveAll') { task ->
         task.doLast {
+            def components = [] as Set
             (scriptConfigurations + configurations).findAll { it.canBeResolved }.each { configuration ->
                 try {
                     configuration.incoming.artifactView { it.lenient(true) }.files.files
+                    configuration.incoming.resolutionResult.allComponents.each { c ->
+                        if (c.id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier) {
+                            components << c.id
+                        }
+                    }
                 } catch (Exception e) {
                     task.logger.info("gradle-purifier: ${configuration.name} did not resolve: ${e.message}")
+                }
+            }
+            if (!components.isEmpty()) {
+                try {
+                    dependencyHandler.createArtifactResolutionQuery()
+                        .forComponents(components)
+                        .withArtifacts(org.gradle.jvm.JvmLibrary,
+                            org.gradle.language.base.artifact.SourcesArtifact,
+                            org.gradle.language.java.artifact.JavadocArtifact)
+                        .execute()
+                        .resolvedComponents.each { c ->
+                            c.getArtifacts(org.gradle.language.base.artifact.SourcesArtifact).each { a ->
+                                if (a instanceof org.gradle.api.artifacts.result.ResolvedArtifactResult) a.file
+                            }
+                            c.getArtifacts(org.gradle.language.java.artifact.JavadocArtifact).each { a ->
+                                if (a instanceof org.gradle.api.artifacts.result.ResolvedArtifactResult) a.file
+                            }
+                        }
+                } catch (Exception e) {
+                    task.logger.info("gradle-purifier: sources and javadoc did not resolve: ${e.message}")
                 }
             }
         }

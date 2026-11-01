@@ -86,6 +86,27 @@ if [ -d "$work/java-library/build/classes" ]; then
   fail "java-library: publish compiled the project"
 fi
 
+echo "== java-library: an IDE imports the build offline through the tooling API" >&2
+# `gradle-purifier ide` sets up the Gradle user home the IDE uses. The
+# import then runs the way Buildship and jdtls import a build, with the
+# distribution that `ide` links.
+output=$(cd "$work/java-library" && GRADLE_USER_HOME="$work/ide-home" "$command" ide 2>&1) || { echo "$output"; fail "java-library: gradle-purifier ide failed"; }
+prefetch() {
+  nix --extra-experimental-features nix-command store prefetch-file --json "$1" | jq -r '.storePath'
+}
+tooling=$(prefetch https://repo.gradle.org/gradle/libs-releases/org/gradle/gradle-tooling-api/9.1.0/gradle-tooling-api-9.1.0.jar)
+slf4j=$(prefetch https://maven-central.storage-download.googleapis.com/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar)
+jdk=$work/java-library/.gradle/purifier/jdk-21/lib/openjdk
+"$jdk/bin/javac" -cp "$tooling" -d "$work/tooling" "$root/tests/ToolingImport.java"
+output=$("$jdk/bin/java" -cp "$work/tooling:$tooling:$slf4j" ToolingImport \
+  "$work/java-library" "$work/java-library/.gradle/purifier/gradle" "$work/ide-home" 2>&1) || { echo "$output"; fail "java-library: the IDE import failed"; }
+grep -q "$(printf '^commons-lang3-3.17.0.jar\tcommons-lang3-3.17.0-sources.jar$')" <<<"$output" \
+  || { echo "$output"; fail "java-library: the IDE import has no commons-lang3 with its sources"; }
+cache=$work/ide-home/caches/modules-2/files-2.1
+if [ -d "$cache" ] && [ -n "$(ls -A "$cache")" ]; then
+  fail "java-library: the IDE import downloaded into the Gradle cache: $(ls "$cache")"
+fi
+
 echo "== kotlin-app: build and run" >&2
 output=$(run kotlin-app build :app:run) || { echo "$output"; fail "kotlin-app: build failed"; }
 # The JVM's notice of JAVA_TOOL_OPTIONS on stderr may share a line with

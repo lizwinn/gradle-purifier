@@ -33,8 +33,13 @@ The tests come in two layers.
    builds and their tests must run from the locked downloads, the
    application must run, and Gradle's download cache must stay empty.
    `gradle-purifier publish` must publish the artifacts and module
-   metadata Nix built, byte for byte, without compiling the project. A
-   changed build script must make the command fall back to `./gradlew`.
+   metadata Nix built, byte for byte, without compiling the project.
+   After `gradle-purifier ide`, an import through the Gradle tooling API
+   (`tests/ToolingImport.java`, the EclipseProject model that Buildship
+   and jdtls use) must resolve the classpath with sources from the lock.
+   A changed build script must make the command fall back to `./gradlew`,
+   and a malformed lockfile, a tampered hash and a missing entry must each
+   fail with a message that names the command to run.
 
 The lockfiles of the fixtures are test data. `tests/relock-fixtures.sh`
 renews them; it needs the network.

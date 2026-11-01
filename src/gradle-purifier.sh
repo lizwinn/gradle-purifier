@@ -59,6 +59,10 @@ Usage:
       runs the build's publish tasks (publish, unless gradle arguments
       name others) with the files Nix built in place of the ones Gradle
       would make. The build's repositories and credentials apply.
+  gradle-purifier ide
+      Makes the builds an IDE runs through the Gradle tooling API read the
+      locked downloads: realizes the lockfile and installs an init script
+      in the init.d of the Gradle user home. Run it again after each lock.
   gradle-purifier <gradle arguments>
       Runs Gradle offline on the locked downloads when the lockfile is
       current, and ./gradlew otherwise.
@@ -503,11 +507,46 @@ publish_command() {
   GRADLE_PURIFIER_ARTIFACTS=$artifacts run_locked_gradle publish "${excluded[@]}" "$@"
 }
 
+# Prepares the build for an IDE, which imports it with its own Gradle
+# through the tooling API: realizes the lockfile, records in
+# .gradle/purifier/ide.properties what the IDE init script needs, and
+# installs that script (ide.init.gradle) in the init.d of the Gradle user
+# home, where every Gradle build applies it.
+ide_command() {
+  require_build_root
+  lock_is_current "The IDE resolves the usual way." || exit 1
+  local state=$PWD/.gradle/purifier
+  local tree
+  tree=$(realize)
+  # The IDE's builds apply the init script from the store; this root keeps
+  # it there.
+  nix-store --add-root "$state/lib" --realise "$lib" >/dev/null
+  local sha256
+  sha256=$(sha256sum "$lockfile" | cut -d ' ' -f 1)
+  {
+    echo "# Written by gradle-purifier ide, for the IDE init script."
+    echo "repository=file://$tree"
+    echo "portal=file://$tree/$portal"
+    echo "initScript=$lib/purifier.init.gradle"
+    echo "lockSha256=$sha256"
+  } >"$state/ide.properties"
+  local init_d=${GRADLE_USER_HOME:-$HOME/.gradle}/init.d
+  mkdir -p "$init_d"
+  install -m 0644 "$lib/ide.init.gradle" "$init_d/gradle-purifier.gradle"
+  # An IDE set to this local Gradle distribution needs no download of the
+  # wrapper's distribution either.
+  local gradle_home
+  gradle_home=$(unpack_distribution "$tree/$(jq -r '.distribution' "$lockfile")")
+  ln -sfn "$gradle_home" "$state/gradle"
+  echo "gradle-purifier: the IDE's Gradle builds of $PWD read the locked downloads now ($init_d/gradle-purifier.gradle). For no download at all, set the IDE's Gradle distribution to $state/gradle. Run 'gradle-purifier ide' again after each lock." >&2
+}
+
 # The unit tests (tests/cli-unit.sh) source the command for its functions.
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   case ${1:-} in
     lock) shift; lock_command "$@" ;;
     publish) shift; publish_command "$@" ;;
+    ide) shift; ide_command "$@" ;;
     -h | --help) usage ;;
     *) run_command "$@" ;;
   esac
