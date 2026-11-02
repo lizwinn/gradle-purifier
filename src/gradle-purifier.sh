@@ -258,10 +258,16 @@ lock_konan_host() {
 }
 
 lock_command() {
-  local relock='' java_major='' given=''
+  local relock='' java_major='' given='' input_args=() refresh_inputs=()
   while [ $# -gt 0 ]; do
     case $1 in
       --relock) relock=1; shift ;;
+      --input)
+        [ $# -ge 2 ] || die "--input takes a flake package"
+        input_args+=(--input "$2")
+        relock=1
+        shift 2
+        ;;
       --java)
         [ $# -ge 2 ] || die "--java takes a Java major version, such as 17"
         java_major=$2
@@ -298,9 +304,14 @@ lock_command() {
 }
 
 update_command() {
-  local java_major='' given='' have_args='' packages=() gradle_args=()
+  local java_major='' given='' have_args='' packages=() gradle_args=() input_args=() refresh_inputs=()
   while [ $# -gt 0 ]; do
     case $1 in
+      --input)
+        [ $# -ge 2 ] || die "--input takes a flake package"
+        input_args+=(--input "$2")
+        shift 2
+        ;;
       --java)
         [ $# -ge 2 ] || die "--java takes a Java major version, such as 17"
         java_major=$2
@@ -344,6 +355,7 @@ update_command() {
   elif uses_dependency_locking; then
     update_args=(--write-locks)
   fi
+  if [ ${#packages[@]} = 0 ]; then refresh_inputs=(--refresh); fi
   run_lock "$(lock_java "$java_major")" "$state/pinned.tsv" 1 "${gradle_args[@]}"
 }
 
@@ -420,6 +432,16 @@ run_lock() {
   rm -rf "$work"
   mkdir -p "$work"
   copy_build "$work/build"
+  local previous_args=()
+  if [ -f "$lockfile" ]; then previous_args=(--previous "$lockfile"); fi
+  python3 "$purifier_source/tools/project_inputs.py" pin "${previous_args[@]}" \
+    "${input_args[@]}" "${refresh_inputs[@]}" --output "$work/inputs.json"
+  if [ "$(jq length "$work/inputs.json")" -gt 0 ]; then
+    python3 "$purifier_source/tools/project_inputs.py" maven --inputs "$work/inputs.json" \
+      --destination "$work/provided" --metadata "$work/input-metadata" --roots "$work/inputs"
+    export GRADLE_PURIFIER_PROVIDED_REPOSITORY="$work/provided"
+    export GRADLE_PURIFIER_PROVIDED_CATALOG="$work/input-metadata/catalog.json"
+  fi
 
   local records=$work/records.tsv
   printf '%s\t%s\t%s\n' "$(tree_path "$url")" "$url" "$dist_hash" >"$records"
@@ -500,6 +522,7 @@ run_lock() {
   artifacts_json "$records" >"$work/artifacts.json"
   jq -n \
     --argjson version "$lock_version" \
+    --slurpfile projectInputs "$work/inputs.json" \
     --slurpfile described "$work/output/projects.json" \
     --slurpfile artifacts "$work/artifacts.json" \
     --arg distribution "$(tree_path "$url")" \
@@ -517,7 +540,7 @@ run_lock() {
       konanHost: $konanHost,
       projects: $described[0].projects,
       artifacts: $artifacts[0]
-    }' >"$work/lock.json"
+    } | if ($projectInputs[0] | length) > 0 then . + {projectInputs: $projectInputs[0]} else . end' >"$work/lock.json"
   mkdir -p "$(dirname "$lockfile")"
   jq --arg contentHash "$(content_hash "$work/lock.json")" '.contentHash = $contentHash' \
     "$work/lock.json" >"$lockfile.tmp"
@@ -562,6 +585,12 @@ prefetch_command() {
   tree=$(build_attr repository)
   jdk=$(build_attr jdk)
   distribution=$(build_attr distribution)
+  if [ "$(jq '.projectInputs // [] | length' "$lockfile")" -gt 0 ]; then
+    jq '.projectInputs' "$lockfile" > "$state/inputs.json"
+    rm -rf "$state/provided" "$state/input-metadata"
+    python3 "$purifier_source/tools/project_inputs.py" maven --inputs "$state/inputs.json" \
+      --destination "$state/provided" --metadata "$state/input-metadata" --roots "$state/inputs"
+  fi
 
   # ./gradlew finds the distribution installed where it looks for it.
   local user_home=${GRADLE_USER_HOME:-$HOME/.gradle}
@@ -585,6 +614,10 @@ prefetch_command() {
     echo "initScript=$lib/purifier.init.gradle"
     echo "portal=file://$tree/$portal"
     echo "gradle.purifier.repository=file://$tree"
+    if [ "$(jq '.projectInputs // [] | length' "$lockfile")" -gt 0 ]; then
+      echo "gradle.purifier.provided.repository=$state/provided"
+      echo "gradle.purifier.provided.catalog=$state/input-metadata/catalog.json"
+    fi
   } >"$properties"
 
   if [ "$(jq '[.artifacts[] | select(.url // "" | startswith("https://download.jetbrains.com/kotlin/native/"))] | length' "$lockfile")" -gt 0 ]; then
@@ -632,11 +665,18 @@ publish_command() {
   fi
   set_paths "$given"
   [ -f "$lockfile" ] || die "the build has no $lockfile; run 'gradle-purifier lock'"
-  local release tree jdk distribution
+  local release tree jdk distribution publication
   release=$(build_attr release)
+  publication=$(build_attr publication)
   tree=$(build_attr repository)
   jdk=$(build_attr jdk)
   distribution=$(build_attr distribution)
+  if [ "$(jq '.projectInputs // [] | length' "$lockfile")" -gt 0 ]; then
+    jq '.projectInputs' "$lockfile" > "$state/inputs.json"
+    rm -rf "$state/provided" "$state/input-metadata"
+    python3 "$purifier_source/tools/project_inputs.py" maven --inputs "$state/inputs.json" \
+      --destination "$state/provided" --metadata "$state/input-metadata" --roots "$state/inputs"
+  fi
   local artifacts='{}' package
   for package in "$release"/*; do
     [ -e "$package" ] || continue
@@ -656,8 +696,10 @@ publish_command() {
     GRADLE_PURIFIER_MODE=publish \
     GRADLE_PURIFIER_REPOSITORY=file://$tree \
     GRADLE_PURIFIER_ARTIFACTS=$artifacts \
+    GRADLE_PURIFIER_PUBLICATION_REPOSITORY=$publication/repository \
+    GRADLE_PURIFIER_PUBLICATION_CATALOG=$publication/catalog.json \
     exec "$distribution/bin/gradle" \
-    --offline \
+    --offline --no-configuration-cache \
     --init-script "$lib/purifier.init.gradle" \
     "-Dorg.gradle.internal.plugins.portal.url.override=file://$tree/$portal" \
     "${locked_args[@]}" "${excluded[@]}" "$@"

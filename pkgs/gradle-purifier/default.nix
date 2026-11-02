@@ -18,6 +18,7 @@
   findutils,
   gnused,
   jq,
+  python3,
   rsync,
   unzip,
 }:
@@ -51,6 +52,7 @@ writeShellApplication {
     findutils
     gnused
     jq
+    python3
     rsync
     unzip
   ];

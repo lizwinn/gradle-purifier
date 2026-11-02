@@ -107,6 +107,12 @@ let
     '';
 in
 {
+  jvm-projection = javaLibrary.projections.maven;
+
+  composition = import ./composition.nix {
+    inherit pkgs build;
+    purifier = withOverlay.lib.purifier;
+  };
   inherit gradle-purifier;
 
   java-library = javaLibrary.packages.greeting;

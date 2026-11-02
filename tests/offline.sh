@@ -156,18 +156,15 @@ expect_no_downloads java-library
 echo "== java-library: publish what Nix built" >&2
 rm -rf "$work/java-library/build"
 output=$(purifier java-library publish publishMavenPublicationToLocalRepository) || { echo "$output"; fail "java-library: publish failed"; }
-published=$work/java-library/build/local-repository/example/greeting/1.0.0
-built=$work/java-library/.gradle-purifier/release/greeting/nix-support/artifacts/maven
-for key in greeting.jar greeting-sources.jar module; do
-  case $key in
-    module) file=greeting-1.0.0.module ;;
-    *) file=${key/greeting/greeting-1.0.0} ;;
-  esac
+published=$(find "$work/java-library/build/local-repository/example/greeting" -mindepth 1 -maxdepth 1 -type d -name '1.0.0-nix-*')
+version=$(basename "$published")
+built=$work/java-library/.gradle-purifier/publication/repository/example/greeting/$version
+for suffix in .jar -sources.jar .module .pom; do
+  file=greeting-$version$suffix
   [ -f "$published/$file" ] || fail "java-library: publish sent no $file"
-  [ -f "$built/$key" ] || fail "java-library: the release holds no $key"
-  cmp -s "$published/$file" "$built/$key" || fail "java-library: the published $file is not the one Nix built"
+  cmp -s "$published/$file" "$built/$file" || fail "java-library: the published $file is not the Nix projection"
 done
-[ -f "$published/greeting-1.0.0.pom" ] || fail "java-library: publish sent no POM"
+grep -q 'published-with-gradle-metadata' "$published/greeting-$version.pom" || fail "java-library: POM lost its module metadata marker"
 if [ -d "$work/java-library/build/classes" ]; then
   echo "$output"
   fail "java-library: publish compiled the project"

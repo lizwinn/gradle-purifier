@@ -63,6 +63,11 @@
   # The fetchers that replace nixpkgs' own, such as a fetchurl that sends
   # credentials. They go to the library's fetchEntry and tree.
   fetchers ? { },
+  # Nix-built JVM dependencies, projected into a native repository.
+  projectDependencies ? purifier.lockedProjectInputs {
+    inputs = (builtins.fromJSON (builtins.readFile lockFile)).projectInputs or [ ];
+    system = stdenvNoCC.hostPlatform.system;
+  },
   # The JDK that runs Gradle and the applications. The default is nixpkgs'
   # headless JDK of the Java major version the lock was made with.
   jdk ? null,
@@ -159,6 +164,13 @@ let
     // fetchers
   );
 
+  provided = purifier.jvmProjections {
+    repository = null;
+    dependencies = projectDependencies;
+    inherit runCommand python3;
+    name = "gradle-provided-dependencies";
+  };
+
   # Kotlin/Native's toolchain, when the lock holds one (see konan.nix).
   konan = callPackage ./konan.nix {
     archives = map (entry: {
@@ -232,6 +244,10 @@ let
     export GRADLE_USER_HOME="$TMPDIR/gradle-home"
     export GRADLE_PURIFIER_MODE=sandbox
     export GRADLE_PURIFIER_REPOSITORY=file://${repository}
+    ${lib.optionalString (projectDependencies != [ ]) ''
+      export GRADLE_PURIFIER_PROVIDED_REPOSITORY=${provided.maven}
+      export GRADLE_PURIFIER_PROVIDED_CATALOG=${provided.maven.catalog}
+    ''}
     export GRADLE_PURIFIER_OUTPUT="$TMPDIR/purifier-output"
     export GRADLE_PURIFIER_CHECK=${if doCheck then "1" else "0"}
     export JAVA_HOME=${javaHome jdk'}
@@ -374,6 +390,13 @@ let
       passthru = {
         inherit repository distribution lock;
         gradleProject = project;
+        projections = purifier.jvmProjections {
+          repository = publicationRepository;
+          producer = publicationRepository;
+          dependencies = projectDependencies;
+          inherit runCommand python3;
+          name = "gradle-jvm-publications";
+        };
         # The artifact files of the package by publication and key, such
         # as artifacts.maven."core-sources.jar". They are known from the
         # lock alone, before the package is built.
@@ -417,6 +440,20 @@ let
     '';
   };
 
+  # Native Maven repository, without the per-project release directory layer.
+  publicationRepository = runCommand "${gradle.rootProjectName}-jvm-publications" { } ''
+    mkdir $out
+    ${lib.concatMapStrings
+      (package: ''
+        cp -r --no-preserve=mode ${package.maven}/. $out/
+      '')
+      (
+        builtins.filter (package: package.gradleProject.publications != [ ]) (builtins.attrValues packages)
+      )
+    }
+    rm -rf $out/nix-support
+  '';
+
   # What `gradle-purifier publish` uploads: the Maven output of every
   # project with publications, by project id.
   release = linkFarm "${gradle.rootProjectName}-release" (
@@ -425,8 +462,21 @@ let
       path = package.maven;
     }) (lib.filterAttrs (_: package: package.gradleProject.publications != [ ]) packages)
   );
+  rootProjections = purifier.jvmProjections {
+    repository = publicationRepository;
+    dependencies = projectDependencies;
+    inherit runCommand python3;
+    name = "gradle-jvm-publications";
+  };
+  publication = runCommand "gradle-publication-repository" { } ''
+    mkdir -p $out
+    ln -s ${rootProjections.maven} $out/repository
+    ln -s ${rootProjections.maven.catalog} $out/catalog.json
+  '';
 in
 {
+  projections = rootProjections;
+  inherit publication;
   inherit
     packages
     tests

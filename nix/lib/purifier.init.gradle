@@ -38,10 +38,14 @@
 // through the stand-in. The purifier tasks belong to the root build only.
 
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import org.gradle.api.artifacts.component.ModuleComponentSelector
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.artifacts.repositories.UrlArtifactRepository
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import org.gradle.api.publish.maven.tasks.GenerateMavenPom
+import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.tasks.Sync
 
 // After a build that reads the locked downloads, the action
@@ -142,6 +146,61 @@ def konanDataDir = setting('GRADLE_PURIFIER_KONAN_DATA_DIR')
 def runCheck = System.getenv('GRADLE_PURIFIER_CHECK') == '1'
 def rootBuild = gradle.parent == null
 
+// The Nix input catalog is outside the native repository and is not a
+// downloaded dependency. It supplies the selected versions automatically.
+def providedCatalog = setting('GRADLE_PURIFIER_PROVIDED_CATALOG')
+def providedRepository = setting('GRADLE_PURIFIER_PROVIDED_REPOSITORY')
+def provided = [:]
+if (providedCatalog) {
+    def catalog = new JsonSlurper().parse(new File(providedCatalog))
+    if (catalog.version != 1 || !providedRepository) {
+        throw new GradleException('gradle-purifier: invalid Nix dependency projection')
+    }
+    catalog.modules.each { module ->
+        provided["${module.group}:${module.name}".toString()] = module.version
+    }
+}
+def addProvidedRepository = { repositories ->
+    if (!provided.isEmpty()) {
+        repositories.maven {
+            name = 'purifierNixInputs'
+            url = new File(providedRepository).toURI()
+            content { descriptor ->
+                provided.keySet().each { coordinate ->
+                    def parts = coordinate.split(':', 2)
+                    descriptor.includeModule(parts[0], parts[1])
+                }
+            }
+        }
+        // Use matching exclusions rather than exclusiveContent: Gradle
+        // forbids buildscript repositories when pluginManagement is exclusive.
+        repositories.all { repository ->
+            if (repository.name != 'purifierNixInputs') {
+                repository.content { descriptor ->
+                    provided.keySet().each { coordinate ->
+                        def parts = coordinate.split(':', 2)
+                        descriptor.excludeModule(parts[0], parts[1])
+                    }
+                }
+            }
+        }
+    }
+}
+def selectProvided = { configurations ->
+    configurations.configureEach { configuration ->
+        configuration.resolutionStrategy.dependencySubstitution.all { substitution ->
+            def requested = substitution.requested
+            if (requested instanceof ModuleComponentSelector) {
+                def version = provided["${requested.group}:${requested.module}".toString()]
+                if (version) {
+                    substitution.useTarget("${requested.group}:${requested.module}:${version}".toString(),
+                        'selected by a Nix dependency')
+                }
+            }
+        }
+    }
+}
+
 // The stand-in URL of a remote URL. A URL that is not http or https, or
 // that already points at the stand-in (the plugin portal, which the
 // command line overrides), stays as it is, and the result is null.
@@ -216,13 +275,33 @@ def idOf = { project ->
     project.path == ':' ? project.rootProject.name : project.path.substring(1).replace(':', '-')
 }
 
+def failOnProjectRepositories = false
+settingsEvaluated { settings ->
+    failOnProjectRepositories = settings.dependencyResolutionManagement.repositoriesMode.get().name() == 'FAIL_ON_PROJECT_REPOS'
+}
 beforeSettings { settings ->
+    addProvidedRepository(settings.pluginManagement.repositories)
+    addProvidedRepository(settings.buildscript.repositories)
+    addProvidedRepository(settings.dependencyResolutionManagement.repositories)
     settings.pluginManagement.repositories.all(purify)
     settings.buildscript.repositories.all(purify)
     settings.dependencyResolutionManagement.repositories.all(purify)
 }
 
 allprojects { project ->
+    if (!provided.isEmpty()) {
+        addProvidedRepository(project.buildscript.repositories)
+        if (!failOnProjectRepositories) {
+            addProvidedRepository(project.repositories)
+        }
+        selectProvided(project.configurations)
+        selectProvided(project.buildscript.configurations)
+        project.plugins.withId('maven-publish') {
+            project.publishing.publications.withType(MavenPublication).configureEach { publication ->
+                publication.versionMapping { allVariants { fromResolutionResult() } }
+            }
+        }
+    }
     project.buildscript.repositories.all(purify)
     project.repositories.all(purify)
 
@@ -390,44 +469,119 @@ allprojects { project ->
 // and credentials the build configures. A publication's Gradle module
 // metadata is the one Nix built too.
 if (rootBuild && mode == 'publish') {
-    def built = new groovy.json.JsonSlurper().parseText(System.getenv('GRADLE_PURIFIER_ARTIFACTS') ?: '{}')
+    def built = new JsonSlurper().parseText(System.getenv('GRADLE_PURIFIER_ARTIFACTS') ?: '{}')
+    def repositoryPath = setting('GRADLE_PURIFIER_PUBLICATION_REPOSITORY')
+    def catalogPath = setting('GRADLE_PURIFIER_PUBLICATION_CATALOG')
+    if (!repositoryPath || !catalogPath) {
+        throw new GradleException('gradle-purifier: publishing needs the Nix publication repository and catalog')
+    }
+    def catalog = new JsonSlurper().parse(new File(catalogPath))
+    def modules = catalog.modules.collectEntries { module ->
+        [("${module.group}:${module.name}".toString()): module]
+    }
+    def configurePublication = { project, publication, module, originals ->
+        publication.groupId = module.group
+        publication.artifactId = module.name
+        publication.version = module.version
+        def directory = new File(repositoryPath,
+            "${module.group.replace('.', '/')}/${module.name}/${module.version}".toString())
+        def prefix = "${module.name}-${module.version}".toString()
+        def files = originals == null ? directory.listFiles().findAll { file ->
+            file.isFile() && file.name.startsWith(prefix) &&
+                !(file.name == prefix + '.pom') &&
+                !(file.name ==~ /.*\.(md5|sha1|sha256|sha512|asc)$/)
+        }.collect { file ->
+            def suffix = file.name.substring(prefix.length())
+            def parts = suffix.startsWith('.') ? [null, suffix.substring(1)] : suffix.substring(1).split(/\./, 2)
+            [file: file, classifier: parts[0], extension: parts[1]]
+        } : originals.collect { artifact ->
+            def classifier = artifact.classifier ?: null
+            def suffix = (classifier ? '-' + classifier : '') + '.' + artifact.extension
+            def file = new File(directory, prefix + suffix)
+            if (!file.isFile()) {
+                throw new GradleException("gradle-purifier: the Nix projection has no ${file.name}")
+            }
+            [file: file, classifier: classifier, extension: artifact.extension]
+        }
+        publication.artifacts = []
+        files.each { replacement ->
+            publication.artifact(replacement.file) { artifact ->
+                artifact.classifier = replacement.classifier
+                artifact.extension = replacement.extension
+            }
+        }
+        def moduleFile = new File(directory, prefix + '.module')
+        if (originals != null && moduleFile.isFile()) {
+            publication.artifact(moduleFile) { artifact -> artifact.extension = 'module' }
+        }
+        project.tasks.withType(GenerateMavenPom).matching {
+            it.name == "generatePomFileFor${publication.name.capitalize()}Publication".toString()
+        }.configureEach { task ->
+            task.destination = new File(directory, prefix + '.pom')
+            task.enabled = false
+        }
+        project.tasks.withType(GenerateModuleMetadata).matching {
+            it.name == "generateMetadataFileFor${publication.name.capitalize()}Publication".toString()
+        }.configureEach { task -> task.enabled = false }
+    }
     gradle.projectsEvaluated { g ->
+        def owners = []
+        def owned = [] as Set
         g.rootProject.allprojects.each { project ->
             def publishing = project.extensions.findByName('publishing')
-            if (publishing == null) {
-                return
-            }
+            if (publishing == null) return
             publishing.publications.withType(MavenPublication).each { publication ->
-                def dir = built[idOf(project)]
-                if (dir == null) {
-                    throw new GradleException("gradle-purifier: the lockfile has no package of ${project.path}, which publishes ${publication.name}; run gradle-purifier lock")
+                def coordinate = "${publication.groupId}:${publication.artifactId}".toString()
+                def module = modules[coordinate]
+                if (built[idOf(project)] == null || module == null) {
+                    throw new GradleException("gradle-purifier: no Nix publication of ${project.path}/${publication.name}; run gradle-purifier lock")
                 }
-                def links = new File(dir, "nix-support/artifacts/${publication.name}")
-                def replacements = publication.artifacts.collect { a ->
-                    def classifier = a.classifier ?: null
-                    def key = "${publication.artifactId}${classifier ? '-' + classifier : ''}.${a.extension}"
-                    def file = new File(links, key)
-                    if (!file.isFile()) {
-                        throw new GradleException("gradle-purifier: the Nix package of ${project.path} holds no ${publication.name}/${key}; run gradle-purifier lock")
+                owned.add(coordinate)
+                configurePublication(project, publication, module, publication.artifacts.toList())
+                owners.add(project)
+            }
+        }
+        def extraModules = modules.findAll { coordinate, module -> !owned.contains(coordinate) }.values()
+        if (!extraModules.isEmpty() && !owners.isEmpty()) {
+            def host = owners[0]
+            def publishing = host.extensions.getByName('publishing')
+            def extras = []
+            extraModules.eachWithIndex { module, index ->
+                def name = "purifierNixInput${index}".toString()
+                while (publishing.publications.findByName(name) != null) name += '_'
+                def publication = publishing.publications.create(name, MavenPublication)
+                configurePublication(host, publication, module, null)
+                extras.add(publication)
+            }
+            // Use each original target's repository object, retaining its
+            // credentials and transport settings. One upload per URL supplies
+            // the input closure even for an explicitly named publish task.
+            def extraNames = extras.collect { it.name } as Set
+            host.tasks.withType(PublishToMavenRepository).configureEach { task ->
+                if (extraNames.any { name -> task.name.startsWith("publish${name.capitalize()}PublicationTo".toString()) }) {
+                    task.enabled = false
+                }
+            }
+            def targets = owners.unique().collectMany { project ->
+                project.tasks.withType(PublishToMavenRepository).findAll { task ->
+                    task.publication != null && !extraNames.contains(task.publication.name)
+                }
+            }
+            def deployments = [:]
+            targets.each { target ->
+                def key = target.repository.url.toString().replaceAll('/+$', '')
+                if (!deployments.containsKey(key)) {
+                    def repository = target.repository
+                    def repositoryIndex = deployments.size()
+                    deployments[key] = extras.withIndex().collect { publication, index ->
+                        host.tasks.register("purifierDeployInput${index}ToRepository${repositoryIndex}".toString(),
+                            PublishToMavenRepository) { task ->
+                            task.publication = publication
+                            task.repository = repository
+                        }
                     }
-                    [file: file, classifier: classifier, extension: a.extension]
                 }
-                def module = new File(links, 'module')
-                publication.artifacts = []
-                replacements.each { r ->
-                    publication.artifact(r.file) { artifact ->
-                        artifact.classifier = r.classifier
-                        artifact.extension = r.extension
-                    }
-                }
-                project.tasks.withType(GenerateModuleMetadata).matching {
-                    it.name == "generateMetadataFileFor${publication.name.capitalize()}Publication".toString()
-                }.configureEach { it.enabled = false }
-                if (module.isFile()) {
-                    publication.artifact(module) { artifact ->
-                        artifact.extension = 'module'
-                    }
-                }
+                target.dependsOn(deployments[key])
             }
         }
     }

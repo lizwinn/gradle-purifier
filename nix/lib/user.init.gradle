@@ -21,6 +21,8 @@ def portalKey = 'org.gradle.internal.plugins.portal.url.override'
 def keys = [
     'gradle.purifier.mode',
     'gradle.purifier.repository',
+    'gradle.purifier.provided.repository',
+    'gradle.purifier.provided.catalog',
     'gradle.purifier.konan.properties',
     'gradle.purifier.konan.data.dir',
 ]
