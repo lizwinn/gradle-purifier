@@ -364,9 +364,5 @@ nix run github:nix-purifiers/gradle-purifier -- prefetch
 
 ## Credits
 
-The design follows
-[sbt-purifier](https://github.com/nix-purifiers/sbt-purifier), which took
-its model from nixcloud's [cargo (libnix)](https://github.com/nixcloud/cargo):
-the build tool resolves, a lockfile records each download by URL and
-hash, and Nix builds from the lockfile in the sandbox.
-`docs/development/` holds the design, the tests and the commands.
+The purifier idea was inspired by nixcloud's
+[cargo (libnix)](https://github.com/nixcloud/cargo).
