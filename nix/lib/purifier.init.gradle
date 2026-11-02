@@ -538,12 +538,14 @@ if (rootBuild && mode == 'publish') {
                 if (built[idOf(project)] == null || module == null) {
                     throw new GradleException("gradle-purifier: no Nix publication of ${project.path}/${publication.name}; run gradle-purifier lock")
                 }
-                owned.add(coordinate)
+                owned.add("${module.group}:${module.name}:${module.version}".toString())
                 configurePublication(project, publication, module, publication.artifacts.toList())
                 owners.add(project)
             }
         }
-        def extraModules = modules.findAll { coordinate, module -> !owned.contains(coordinate) }.values()
+        def extraModules = (catalog.publications ?: catalog.modules).findAll { module ->
+            !owned.contains("${module.group}:${module.name}:${module.version}".toString())
+        }
         if (!extraModules.isEmpty() && !owners.isEmpty()) {
             def host = owners[0]
             def publishing = host.extensions.getByName('publishing')

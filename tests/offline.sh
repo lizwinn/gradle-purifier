@@ -22,6 +22,15 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/gradle-purifier-offline.XXXXXX")
 # The IDE import starts a Gradle daemon, which outlives the test and
 # writes into its Gradle user home; it stops before the directory goes.
 cleanup() {
+  # Daemon arguments need not include the user-home path. Stop each native
+  # registry explicitly before waiting for remaining test-owned processes.
+  for fixture in java-library kotlin-app; do
+    if [[ -x $work/$fixture/.gradle-purifier/distribution/bin/gradle ]]; then
+      GRADLE_USER_HOME="$work/$fixture-home" \
+        JAVA_HOME="$work/$fixture/.gradle-purifier/jdk/lib/openjdk" \
+        "$work/$fixture/.gradle-purifier/distribution/bin/gradle" --offline --stop >/dev/null 2>&1 || true
+    fi
+  done
   pkill -TERM -f -- "$work" 2>/dev/null || true
   for _ in {1..50}; do
     pgrep -f -- "$work" >/dev/null || break
