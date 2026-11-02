@@ -89,7 +89,9 @@ public final class Downstream { public static void main(String[] args) throws Ex
           <properties><maven.compiler.release>21</maven.compiler.release></properties>
           <repositories><repository><id>projected</id><url>{repository.as_uri()}</url></repository></repositories>
           <dependencies><dependency><groupId>example</groupId><artifactId>greeting</artifactId>
-            <version>{version}</version></dependency></dependencies></project>''')
+            <version>{version}</version></dependency>
+          <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId>
+            <version>3.17.0</version></dependency></dependencies></project>''')
         plain = dict(os.environ, JAVA_HOME=str(tools / 'jdk'),
             GRADLE_USER_HOME=str(temporary / 'ordinary-gradle-home'))
         run(tools / 'bin/mvn', '-B', '-Dmaven.repo.local=' + str(temporary / 'ordinary-m2'),
@@ -105,5 +107,13 @@ public final class Downstream { public static void main(String[] args) throws Ex
           application {{ mainClass='example.Downstream' }}
         ''')
         run(gradle, '--no-daemon', '--console=plain', 'run', cwd=downstream, environment=plain)
+        # A competing direct request must never silently replace a Nix
+        # selection, even when that selection is reached through a Maven POM.
+        with (downstream / 'build.gradle').open('a') as build:
+            build.write("\ndependencies { implementation 'org.apache.commons:commons-lang3:3.17.0' }\n")
+        conflict = subprocess.run([str(gradle), '--no-daemon', '--console=plain', 'run'],
+            cwd=downstream, env=plain, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        assert conflict.returncode != 0, 'Gradle silently replaced the Nix input'
+        assert 'version constraints' in conflict.stdout and 'strictly' in conflict.stdout, conflict.stdout
         print('GRADLE PROJECTED RUNTIME AND ORDINARY DOWNSTREAMS PASSED: '
               + ('transitive' if transitive else 'direct'))
