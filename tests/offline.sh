@@ -22,8 +22,18 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/gradle-purifier-offline.XXXXXX")
 # The IDE import starts a Gradle daemon, which outlives the test and
 # writes into its Gradle user home; it stops before the directory goes.
 cleanup() {
-  pkill -f -- "$work" 2>/dev/null || true
-  sleep 1
+  pkill -TERM -f -- "$work" 2>/dev/null || true
+  for _ in {1..50}; do
+    pgrep -f -- "$work" >/dev/null || break
+    sleep 0.1
+  done
+  # A daemon can take longer than the grace period to stop. Do not race
+  # its final cache writes against removing the directory.
+  pkill -KILL -f -- "$work" 2>/dev/null || true
+  for _ in {1..50}; do
+    pgrep -f -- "$work" >/dev/null || break
+    sleep 0.1
+  done
   rm -rf "$work"
 }
 trap cleanup EXIT
