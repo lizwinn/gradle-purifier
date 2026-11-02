@@ -33,7 +33,8 @@ For persistent use, add these packages through your usual Nix configuration.
 After each lock, run `prefetch` at the build root:
 
 ```zsh
-nix run github:nix-purifiers/gradle-purifier -- prefetch
+nix shell 'github:nix-purifiers/gradle-purifier'
+gradle-purifier prefetch
 ```
 
 It realizes in the Nix store the locked downloads, the JDK, the Gradle
@@ -104,7 +105,8 @@ same path.
 ### Publishing
 
 ```zsh
-nix run github:nix-purifiers/gradle-purifier -- publish
+nix shell 'github:nix-purifiers/gradle-purifier'
+gradle-purifier publish
 ```
 
 The command builds the `release` with Nix, from the lockfile, then runs
@@ -315,7 +317,8 @@ is a Spring Boot application with a Gradle wrapper and a Java 17
 toolchain. In a clone of it, lock it on Java 17:
 
 ```zsh
-nix run github:nix-purifiers/gradle-purifier -- lock --java 17
+nix shell 'github:nix-purifiers/gradle-purifier'
+gradle-purifier lock --java 17
 git add gradle-purifier.lock.json
 ```
 
@@ -339,7 +342,8 @@ For the development loop, `prefetch` sets up the wrapper, and the usual
 commands work offline:
 
 ```zsh
-nix run github:nix-purifiers/gradle-purifier -- prefetch
+nix shell 'github:nix-purifiers/gradle-purifier'
+gradle-purifier prefetch
 ./gradlew bootRun
 ```
 
