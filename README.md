@@ -130,7 +130,8 @@ A flake is optional and can live in the project or in another repository:
 ```nix
 # flake.nix
 {
-  inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
+  inputs.gradle-purifier.url =
+    "github:nix-purifiers/gradle-purifier";
   inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
 
   outputs =
@@ -144,7 +145,8 @@ A flake is optional and can live in the project or in another repository:
     in
     {
       packages.${system}.app =
-        (pkgs.gradle-purifier.buildGradleProject { src = ./.; })
+        (pkgs.gradle-purifier.buildGradleProject { src =
+          ./.; })
         .packages.app;
     };
 }
