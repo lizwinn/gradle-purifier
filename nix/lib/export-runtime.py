@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+from urllib.parse import unquote
 import xml.etree.ElementTree as ET
 
 spec = importlib.util.spec_from_file_location('jvm_repository', sys.argv[1])
@@ -63,8 +64,11 @@ selected = {(module['group'], module['name'], module['version']) for module in m
 for path in downloads.rglob('*.module'):
     document = json.loads(path.read_text())
     component = document.get('component', {})
-    coordinate = (component.get('group'), component.get('module'), component.get('version'))
-    if coordinate in selected and coordinate[:2] not in provided:
+    # Kotlin platform metadata may identify its common publishing component.
+    # The downloaded Maven path identifies which selected module owns the file.
+    coordinate = (component.get('group'), unquote(path.parent.parent.name), unquote(path.parent.name))
+    if (coordinate in selected and coordinate[:2] not in provided
+            and unquote(path.name) == str(coordinate[1])+'-'+str(coordinate[2])+'.module'):
         module = dict(zip(('group', 'name', 'version'), coordinate))
         jvm.write(directory(runtime, module) / (module['name'] + '-' + module['version'] + '.module'), path.read_bytes())
 jvm.write(runtime / 'purifier-runtime-modules.json',

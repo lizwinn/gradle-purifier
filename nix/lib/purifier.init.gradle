@@ -347,10 +347,8 @@ allprojects { project ->
     project.tasks.register('purifierBuild') { task ->
         task.group = 'gradle-purifier'
         task.description = 'Builds what the Nix package of this project holds.'
-        if (providedCatalog) {
-            task.dependsOn { project.configurations.findAll { PurifierRuntime.runtime(it) } }
-            task.doLast { PurifierRuntime.export(project, new File(outputDir, 'runtime-data.json')) }
-        }
+        task.dependsOn { project.configurations.findAll { PurifierRuntime.runtime(it) } }
+        task.doLast { PurifierRuntime.export(project, new File(outputDir, 'runtime-data.json')) }
         task.dependsOn(project.tasks.matching { t ->
             t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall', 'purifierNativeInstall', 'purifierArchives'] ||
                 (runCheck && t.name == 'check')

@@ -107,6 +107,11 @@ let
     '';
 in
 {
+  # A producer needs a complete runtime view even with no Nix project inputs.
+  standalone-projection = pkgs.runCommand "gradle-standalone-projection" { } ''
+    test -n "$(find ${javaLibrary.projections.maven}/org/apache/commons/commons-lang3 -name '*.jar')"
+    touch $out
+  '';
   jvm-projection = javaLibrary.projections.maven;
 
   composition = import ./composition.nix {

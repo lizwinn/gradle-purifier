@@ -312,7 +312,7 @@ let
         "out"
       ]
       ++ lib.optional hasPublications "maven"
-      ++ lib.optionals (projectDependencies != [ ]) [
+      ++ [
         "runtime"
         "localPublications"
       ];
@@ -324,11 +324,9 @@ let
       buildPhase = ''
         runHook preBuild
         ${runGradle [ taskPath ]}
-        ${lib.optionalString (projectDependencies != [ ]) ''
-          ${python3}/bin/python ${./export-runtime.py} ${purifier.jvmRepositoryTool} \
+                  ${python3}/bin/python ${./export-runtime.py} ${purifier.jvmRepositoryTool} \
             "$GRADLE_PURIFIER_OUTPUT/${project.id}/runtime-data.json" \
             ${repository} "$runtime" "$localPublications" ${provided.maven.catalog}
-        ''}
         runHook postBuild
       '';
       installPhase = ''
@@ -405,7 +403,7 @@ let
         projections = purifier.jvmProjections {
           repository = publicationRepository;
           producer = publicationRepository;
-          runtimeRepository = if projectDependencies == [ ] then null else runtimeRepository;
+          inherit runtimeRepository;
           dependencies = projectDependencies;
           inherit runCommand python3;
           name = "gradle-jvm-publications";
@@ -459,9 +457,7 @@ let
     ${lib.concatMapStrings
       (package: ''
         cp -r --no-preserve=mode ${package.maven}/. $out/
-        ${lib.optionalString (projectDependencies != [ ]) ''
-          cp -r --no-preserve=mode ${package.localPublications}/. $out/
-        ''}
+        cp -r --no-preserve=mode ${package.localPublications}/. $out/
       '')
       (
         builtins.filter (package: package.gradleProject.publications != [ ]) (builtins.attrValues packages)
@@ -508,7 +504,7 @@ let
       '';
   rootProjections = purifier.jvmProjections {
     repository = publicationRepository;
-    runtimeRepository = if projectDependencies == [ ] then null else runtimeRepository;
+    inherit runtimeRepository;
     dependencies = projectDependencies;
     inherit runCommand python3;
     name = "gradle-jvm-publications";
