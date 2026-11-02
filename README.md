@@ -146,7 +146,8 @@ A flake is optional and can live in the project or in another repository:
   inputs.gradle-purifier.url = "github:nix-purifiers/gradle-purifier";
   inputs.nixpkgs.follows = "gradle-purifier/nixpkgs";
 
-  outputs = { nixpkgs, gradle-purifier, ... }:
+  outputs =
+    { nixpkgs, gradle-purifier, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -156,7 +157,8 @@ A flake is optional and can live in the project or in another repository:
     in
     {
       packages.${system}.app =
-        (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app;
+        (pkgs.gradle-purifier.buildGradleProject { src = ./.; })
+        .packages.app;
     };
 }
 ```
@@ -209,15 +211,15 @@ For an ad hoc build, the builder can also be evaluated directly from the
 project root. Replace the example package name with one from your project:
 
 ```zsh
-nix build --impure --expr '
-  let
-    purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
-    pkgs = import purifier.inputs.nixpkgs {
-      system = builtins.currentSystem;
-      overlays = [ purifier.overlays.default ];
-    };
-  in
-  (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.app'
+nix build --impure --expr 'let
+  purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
+  pkgs = import purifier.inputs.nixpkgs {
+    system = builtins.currentSystem;
+    overlays = [ purifier.overlays.default ];
+  };
+in
+(pkgs.gradle-purifier.buildGradleProject { src = ./.; })
+.packages.app'
 ```
 
 This uses the purifier's pinned nixpkgs, matching the lock command above.
@@ -336,15 +338,15 @@ Build the Spring Boot jar from the clone's directory, with no Nix files
 added to it, then run it on Java 17:
 
 ```zsh
-nix build --impure --expr '
-  let
-    purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
-    pkgs = import purifier.inputs.nixpkgs {
-      system = builtins.currentSystem;
-      overlays = [ purifier.overlays.default ];
-    };
-  in
-  (pkgs.gradle-purifier.buildGradleProject { src = ./.; }).packages.spring-petclinic'
+nix build --impure --expr 'let
+  purifier = builtins.getFlake "github:nix-purifiers/gradle-purifier";
+  pkgs = import purifier.inputs.nixpkgs {
+    system = builtins.currentSystem;
+    overlays = [ purifier.overlays.default ];
+  };
+in
+(pkgs.gradle-purifier.buildGradleProject { src = ./.; })
+.packages.spring-petclinic'
 java -jar result/share/archives/spring-petclinic.jar
 ```
 
