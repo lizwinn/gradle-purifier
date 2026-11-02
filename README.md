@@ -144,6 +144,10 @@ Projected repositories use immutable, Nix-derived versions. The purifier's
 publish command deploys those coordinates and supplied dependencies, with
 POM references rewritten so ordinary Maven consumers can resolve them.
 
+Publications also include dependencies from Gradle's included builds. When a
+Nix input changes a transitive edge, the affected intermediate descriptors get
+immutable versions too.
+
 ## Building the project with Nix
 
 Once the native development workflow is working, you can also build and

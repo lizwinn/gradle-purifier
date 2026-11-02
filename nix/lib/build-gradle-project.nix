@@ -308,7 +308,14 @@ let
     stdenvNoCC.mkDerivation (finalAttrs: {
       name = project.id;
       src = filteredSrc;
-      outputs = [ "out" ] ++ lib.optional hasPublications "maven";
+      outputs = [
+        "out"
+      ]
+      ++ lib.optional hasPublications "maven"
+      ++ lib.optionals (projectDependencies != [ ]) [
+        "runtime"
+        "localPublications"
+      ];
       nativeBuildInputs = [ makeWrapper ];
       dontConfigure = true;
       # The outputs are jars, POMs and start scripts; fixup has nothing to
@@ -317,6 +324,11 @@ let
       buildPhase = ''
         runHook preBuild
         ${runGradle [ taskPath ]}
+        ${lib.optionalString (projectDependencies != [ ]) ''
+          ${python3}/bin/python ${./export-runtime.py} ${purifier.jvmRepositoryTool} \
+            "$GRADLE_PURIFIER_OUTPUT/${project.id}/runtime-data.json" \
+            ${repository} "$runtime" "$localPublications" ${provided.maven.catalog}
+        ''}
         runHook postBuild
       '';
       installPhase = ''
@@ -393,6 +405,7 @@ let
         projections = purifier.jvmProjections {
           repository = publicationRepository;
           producer = publicationRepository;
+          runtimeRepository = if projectDependencies == [ ] then null else runtimeRepository;
           dependencies = projectDependencies;
           inherit runCommand python3;
           name = "gradle-jvm-publications";
@@ -446,6 +459,9 @@ let
     ${lib.concatMapStrings
       (package: ''
         cp -r --no-preserve=mode ${package.maven}/. $out/
+        ${lib.optionalString (projectDependencies != [ ]) ''
+          cp -r --no-preserve=mode ${package.localPublications}/. $out/
+        ''}
       '')
       (
         builtins.filter (package: package.gradleProject.publications != [ ]) (builtins.attrValues packages)
@@ -462,8 +478,37 @@ let
       path = package.maven;
     }) (lib.filterAttrs (_: package: package.gradleProject.publications != [ ]) packages)
   );
+  runtimeRepository =
+    runCommand "${gradle.rootProjectName}-runtime-repository" { nativeBuildInputs = [ python3 ]; }
+      ''
+        mkdir -p "$out"
+        ${python3}/bin/python - "$out" ${
+          lib.escapeShellArgs (map (package: toString package.runtime) (builtins.attrValues packages))
+        } <<'PYTHON'
+        import json, shutil, sys
+        from pathlib import Path
+        destination = Path(sys.argv[1])
+        modules = {}
+        for source in map(Path, sys.argv[2:]):
+            graph = json.loads((source / 'purifier-runtime-modules.json').read_text())
+            for module in graph['modules']:
+                key = (module['group'], module['name'])
+                if key in modules and modules[key] != module:
+                    raise ValueError('conflicting selected Gradle runtime component: ' + str(key))
+                modules[key] = module
+            for path in source.rglob('*'):
+                if path.is_file() and path.name != 'purifier-runtime-modules.json':
+                    target = destination / path.relative_to(source)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    if target.exists() and target.read_bytes() != path.read_bytes():
+                        raise ValueError('conflicting Gradle runtime metadata: ' + str(target))
+                    shutil.copyfile(path, target)
+        (destination / 'purifier-runtime-modules.json').write_text(json.dumps({'modules': list(modules.values())}, sort_keys=True))
+        PYTHON
+      '';
   rootProjections = purifier.jvmProjections {
     repository = publicationRepository;
+    runtimeRepository = if projectDependencies == [ ] then null else runtimeRepository;
     dependencies = projectDependencies;
     inherit runCommand python3;
     name = "gradle-jvm-publications";

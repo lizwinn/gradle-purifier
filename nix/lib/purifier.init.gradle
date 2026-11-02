@@ -347,6 +347,10 @@ allprojects { project ->
     project.tasks.register('purifierBuild') { task ->
         task.group = 'gradle-purifier'
         task.description = 'Builds what the Nix package of this project holds.'
+        if (providedCatalog) {
+            task.dependsOn { project.configurations.findAll { PurifierRuntime.runtime(it) } }
+            task.doLast { PurifierRuntime.export(project, new File(outputDir, 'runtime-data.json')) }
+        }
         task.dependsOn(project.tasks.matching { t ->
             t.name in ['publishAllPublicationsToPurifierRepository', 'purifierInstall', 'purifierNativeInstall', 'purifierArchives'] ||
                 (runCheck && t.name == 'check')
@@ -629,5 +633,135 @@ if (rootBuild && mode == 'lock') {
             rootProjectName: g.rootProject.name,
             projects       : projects.sort { it.path },
         ]))
+    }
+}
+
+// Ask Gradle for the graph it actually selected, including substituted
+// projects. Tool and buildscript configurations are deliberately outside it.
+class PurifierRuntime {
+    static boolean runtime(configuration) {
+        configuration.canBeResolved && configuration.name.toLowerCase().endsWith('runtimeclasspath') &&
+            !configuration.name.startsWith('test') && !configuration.name.contains('Test')
+    }
+
+    static Map coordinate(component) {
+        def id = component.moduleVersion
+        if (id == null) return null
+        [group: id.group, name: id.name, version: id.version]
+    }
+
+    static void export(project, File destination) {
+        def components = [:]
+        def files = [:].withDefault { [] }
+        project.configurations.findAll { runtime(it) }.each { configuration ->
+            configuration.incoming.resolutionResult.allComponents.each { component ->
+                def module = coordinate(component)
+                if (module != null) {
+                    def key = "${module.group}:${module.name}".toString()
+                    if (components[key] != null && coordinate(components[key]).version != module.version) {
+                        throw new GradleException("gradle-purifier: multiple runtime versions of ${key}")
+                    }
+                    components[key] = component
+                }
+            }
+            configuration.incoming.artifacts.artifacts.each { artifact ->
+                files[artifact.id.componentIdentifier].add(artifact.file)
+            }
+        }
+        def poms = [:]
+        def visiting = [] as Set
+        def text = { node, String name ->
+            def children = node.childNodes
+            (0..<children.length).collect { children.item(it) }.find {
+                it.nodeType == org.w3c.dom.Node.ELEMENT_NODE && (it.localName ?: it.nodeName) == name
+            }?.textContent?.trim() ?: ''
+        }
+        def element = { node, String name ->
+            def children = node.childNodes
+            (0..<children.length).collect { children.item(it) }.find {
+                it.nodeType == org.w3c.dom.Node.ELEMENT_NODE && (it.localName ?: it.nodeName) == name
+            }
+        }
+        def expand = { String value, Map properties ->
+            32.times { properties.each { key, replacement -> value = value.replace('${' + key + '}', replacement) } }
+            value
+        }
+        Closure readPom
+        readPom = { Map module ->
+            def key = "${module.group}:${module.name}:${module.version}".toString()
+            if (poms.containsKey(key)) return poms[key].properties
+            if (!visiting.add(key)) throw new GradleException("gradle-purifier: cyclic POM parents at ${key}")
+            def query = project.dependencies.createArtifactResolutionQuery()
+                .forModule(module.group, module.name, module.version)
+                .withArtifacts(org.gradle.maven.MavenModule, org.gradle.maven.MavenPomArtifact)
+                .execute()
+            def artifact = query.resolvedComponents.collectMany {
+                it.getArtifacts(org.gradle.maven.MavenPomArtifact).findAll {
+                    it instanceof org.gradle.api.artifacts.result.ResolvedArtifactResult
+                }
+            }.find()
+            if (artifact == null) {
+                visiting.remove(key)
+                return [:]
+            }
+            def parser = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+            parser.namespaceAware = true
+            parser.setFeature('http://apache.org/xml/features/disallow-doctype-decl', true)
+            def root = parser.newDocumentBuilder().parse(artifact.file).documentElement
+            def properties = [:]
+            def local = element(root, 'properties')
+            if (local != null) {
+                (0..<local.childNodes.length).each { index ->
+                    def node = local.childNodes.item(index)
+                    if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE) {
+                        properties[node.localName ?: node.nodeName] = node.textContent.trim()
+                    }
+                }
+            }
+            def parent = element(root, 'parent')
+            if (parent != null) {
+                def selected = [group: expand(text(parent, 'groupId'), properties),
+                    name: expand(text(parent, 'artifactId'), properties),
+                    version: expand(text(parent, 'version'), properties)]
+                def inherited = readPom(selected)
+                properties = inherited + properties
+                properties['project.parent.groupId'] = selected.group
+                properties['project.parent.version'] = selected.version
+            }
+            properties['project.groupId'] = module.group
+            properties['pom.groupId'] = module.group
+            properties['project.version'] = module.version
+            properties['pom.version'] = module.version
+            poms[key] = module + [file: artifact.file.absolutePath, properties: properties]
+            visiting.remove(key)
+            def management = element(root, 'dependencyManagement')
+            def dependencies = management == null ? null : element(management, 'dependencies')
+            if (dependencies != null) {
+                (0..<dependencies.childNodes.length).each { index ->
+                    def node = dependencies.childNodes.item(index)
+                    if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE && text(node, 'scope') == 'import') {
+                        readPom([group: expand(text(node, 'groupId'), properties),
+                            name: expand(text(node, 'artifactId'), properties),
+                            version: expand(text(node, 'version'), properties)])
+                    }
+                }
+            }
+            properties
+        }
+        def modules = []
+        components.values().each { component ->
+            def module = coordinate(component)
+            def artifacts = files[component.id].findAll { it.isFile() }.unique()
+            def local = component.id instanceof org.gradle.api.artifacts.component.ProjectComponentIdentifier
+            if (local && artifacts.isEmpty()) return
+            if (!local) readPom(module)
+            def dependencies = component.dependencies.findAll {
+                it instanceof org.gradle.api.artifacts.result.ResolvedDependencyResult
+            }.collect { coordinate(it.selected) }.findAll { it != null }.unique()
+            modules << module + [project: local, files: artifacts.collect { it.absolutePath }, dependencies: dependencies]
+        }
+        destination.parentFile.mkdirs()
+        destination.text = JsonOutput.toJson([modules: modules,
+            poms: poms.values().collect { it.findAll { key, value -> key != 'properties' } }]) + '\n'
     }
 }
